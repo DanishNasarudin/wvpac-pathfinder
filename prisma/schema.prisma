@@ -1,0 +1,48 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  output          = "./generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Floor {
+  id   Int    @id @default(autoincrement())
+  name String
+  src  String
+
+  points Point[]
+  edges  Edge[]
+}
+
+model Point {
+  id   Int    @id @default(autoincrement())
+  name String
+  type String
+  x    Int
+  y    Int
+
+  floorId Int
+  floor   Floor @relation(fields: [floorId], references: [id])
+
+  outgoingEdges Edge[] @relation("EdgeFrom")
+  incomingEdges Edge[] @relation("EdgeTo")
+}
+
+model Edge {
+  id Int @id @default(autoincrement())
+
+  floorId Int
+  floor   Floor @relation(fields: [floorId], references: [id])
+
+  fromId Int
+  from   Point @relation("EdgeFrom", fields: [fromId], references: [id])
+  toId   Int
+  to     Point @relation("EdgeTo", fields: [toId], references: [id])
+}

@@ -17,6 +17,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(base),
   title: "Pathfinder",
   description: "Conventions Pathfinder",
   icons: {
@@ -43,7 +44,13 @@ export const metadata: Metadata = {
         type: "image/png",
       },
     ],
-    apple: "/apple-touch-icon.png",
+    apple: [
+      { url: new URL("/apple-touch-icon.png", base), type: "image/png" },
+      {
+        url: new URL("/apple-touch-icon-precomposed.png", base),
+        type: "image/png",
+      },
+    ],
   },
   openGraph: {
     siteName: "Pathfinder",
