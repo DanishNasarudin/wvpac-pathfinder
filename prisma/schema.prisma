@@ -17,8 +17,18 @@ model Floor {
   name String
   src  String
 
+  rooms  Room[]
   points Point[]
   edges  Edge[]
+}
+
+model Room {
+  id      Int    @id @default(autoincrement())
+  name    String
+  floorId Int
+  floor   Floor  @relation(fields: [floorId], references: [id], onDelete: Cascade)
+
+  entryPoints Point[] @relation("RoomEntries")
 }
 
 model Point {
@@ -29,7 +39,10 @@ model Point {
   y    Int
 
   floorId Int
-  floor   Floor @relation(fields: [floorId], references: [id])
+  floor   Floor @relation(fields: [floorId], references: [id], onDelete: Cascade)
+
+  roomId Int?
+  room   Room? @relation("RoomEntries", fields: [roomId], references: [id])
 
   outgoingEdges Edge[] @relation("EdgeFrom")
   incomingEdges Edge[] @relation("EdgeTo")
@@ -39,10 +52,10 @@ model Edge {
   id Int @id @default(autoincrement())
 
   floorId Int
-  floor   Floor @relation(fields: [floorId], references: [id])
+  floor   Floor @relation(fields: [floorId], references: [id], onDelete: Cascade)
 
   fromId Int
-  from   Point @relation("EdgeFrom", fields: [fromId], references: [id])
+  from   Point @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)
   toId   Int
-  to     Point @relation("EdgeTo", fields: [toId], references: [id])
+  to     Point @relation("EdgeTo", fields: [toId], references: [id], onDelete: Cascade)
 }
