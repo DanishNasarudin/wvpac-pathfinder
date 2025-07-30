@@ -14,41 +14,46 @@ import {
 } from "../ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "../ui/popover";
 
-type Props = {
+type ListItem = { id: string; name: string };
+interface Props {
   id?: string;
-  lists?: string[];
-  onValueChange?: (newValue: string, id: string) => void;
+  lists: Array<string | ListItem>;
+  onValueChange?: (value: string, componentId: string) => void;
   valueInput?: string;
   width?: string;
   isStart?: string;
   isEnd?: string;
   placeholder?: string;
   noSearch?: boolean;
-};
+  allowDeselect?: boolean;
+}
 
 export default function DropdownSearch({
   id = "default",
-  lists = ["A1", "B2"],
+  lists,
   onValueChange = () => {},
-  valueInput = "",
+  valueInput,
   width = "none",
-  isStart = "",
-  isEnd = "",
-  placeholder = "default",
+  isStart,
+  isEnd,
+  placeholder = "Select…",
   noSearch = false,
+  allowDeselect = false,
 }: Props) {
+  const normalized: ListItem[] = lists.map((item) =>
+    typeof item === "string"
+      ? { id: item, name: item }
+      : { id: item.id, name: item.name }
+  );
+
   const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(valueInput || "");
+  const [selected, setSelected] = useState<ListItem | undefined>(
+    valueInput ? normalized.find((i) => i.id === valueInput) : undefined
+  );
 
   useEffect(() => {
-    if (value === "") return;
-
-    onValueChange(value, id);
-  }, [value]);
-
-  useEffect(() => {
-    if (valueInput === "") return;
-    setValue(valueInput);
+    if (!valueInput) return;
+    setSelected(normalized.find((i) => i.id === valueInput));
   }, [valueInput]);
 
   return (
@@ -63,13 +68,11 @@ export default function DropdownSearch({
             "justify-between text-ellipsis overflow-hidden text-xs w-full"
           )}
         >
-          <p className="truncate">
-            {value ? lists.find((list) => list === value) : placeholder}
-          </p>
-          {isStart !== "" && isStart === value && isStart !== isEnd && (
+          <p className="truncate">{selected ? selected.name : placeholder}</p>
+          {isStart && selected?.name === isStart && (
             <Badge className="text-xs">Start</Badge>
           )}
-          {isEnd !== "" && isEnd === value && isStart !== isEnd && (
+          {isEnd && selected?.name === isEnd && (
             <Badge className="text-xs" variant={"destructive"}>
               Destination
             </Badge>
@@ -88,26 +91,35 @@ export default function DropdownSearch({
           <CommandList>
             <CommandEmpty>No list found.</CommandEmpty>
             <CommandGroup>
-              {lists.map((list) => (
+              {normalized.map((item) => (
                 <CommandItem
-                  key={list}
-                  value={list}
-                  onSelect={(currentValue) => {
-                    setValue(currentValue);
+                  key={item.id}
+                  value={item.name}
+                  onSelect={() => {
+                    if (allowDeselect) {
+                      if (selected && item.id === selected.id) {
+                        setSelected(undefined);
+                        onValueChange("null", id!);
+                      } else {
+                        setSelected(item);
+                        onValueChange(item.id, id!);
+                      }
+                    } else {
+                      setSelected(item);
+                      onValueChange(item.id, id!);
+                    }
                     setOpen(false);
                   }}
                 >
                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
-                      value === list ? "opacity-100" : "opacity-0"
+                      selected?.id === item.id ? "opacity-100" : "opacity-0"
                     )}
                   />
-                  {list}
-                  {isStart !== "" && isStart === list && isStart !== isEnd && (
-                    <Badge>Start</Badge>
-                  )}
-                  {isEnd !== "" && isEnd === list && isStart !== isEnd && (
+                  {item.name}
+                  {isStart && item.name === isStart && <Badge>Start</Badge>}
+                  {isEnd && item.name === isEnd && (
                     <Badge variant={"destructive"}>Destination</Badge>
                   )}
                 </CommandItem>

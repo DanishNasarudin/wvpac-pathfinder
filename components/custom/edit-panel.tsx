@@ -7,18 +7,21 @@ import { Input } from "../ui/input";
 import { ScrollArea } from "../ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import EditEdgeRow from "./edit-edge-row";
+import EditRoomRow from "./edit-room-row";
 import EditRow from "./edit-row";
 
 export default function EditPanel() {
   const floorId = useFloorStore(useShallow((state) => state.id));
   const points = useFloorStore(useShallow((state) => state.points));
   const edges = useFloorStore(useShallow((state) => state.edges));
+  const rooms = useFloorStore(useShallow((state) => state.rooms));
   const triggerAddPoint = useFloorStore(
     useShallow((state) => state.triggerAddPoint)
   );
   const triggerAddJunction = useFloorStore(
     useShallow((state) => state.triggerAddJunction)
   );
+  const addRoom = useFloorStore(useShallow((state) => state.addRoom));
   const addEdge = useFloorStore(useShallow((state) => state.addEdge));
   const pendingAdd = useFloorStore(useShallow((state) => state.pendingAdd));
   const junctionAdd = useFloorStore(useShallow((state) => state.junctionAdd));
@@ -34,6 +37,7 @@ export default function EditPanel() {
         <TabsList className="mx-2 mb-2">
           <TabsTrigger value="points">Points</TabsTrigger>
           <TabsTrigger value="edges">Edges</TabsTrigger>
+          <TabsTrigger value="rooms">Rooms</TabsTrigger>
         </TabsList>
         <TabsContent value="points" className="flex flex-col gap-2">
           <ScrollArea className="h-[400px] px-2">
@@ -47,7 +51,7 @@ export default function EditPanel() {
                       : true
                   )
                   .map((point) => (
-                    <EditRow key={point.id} data={point} />
+                    <EditRow key={point.id} data={point} options={rooms} />
                   ))}
               </tbody>
             </table>
@@ -120,6 +124,44 @@ export default function EditPanel() {
               }
             >
               + Add Edge
+            </Button>
+          </div>
+        </TabsContent>
+        <TabsContent value="rooms">
+          <ScrollArea className="h-[400px] px-2">
+            <table>
+              <tbody>
+                {rooms
+                  .toSorted((a, b) => b.id - a.id)
+                  .filter((point) =>
+                    search
+                      ? point.name.toLowerCase().includes(search.toLowerCase())
+                      : true
+                  )
+                  .map((point) => (
+                    <EditRoomRow key={point.id} data={point} />
+                  ))}
+              </tbody>
+            </table>
+          </ScrollArea>
+          <div className="px-2 grid grid-flow-row gap-1">
+            <Input
+              value={search}
+              placeholder="Search Name"
+              onChange={(e) => setSearch(e.currentTarget.value)}
+            />
+            <Button
+              className="w-full"
+              variant={"outline"}
+              onClick={() =>
+                addRoom({
+                  name: "enter room name",
+                  id: -1,
+                  floorId,
+                })
+              }
+            >
+              + Add Room
             </Button>
           </div>
         </TabsContent>

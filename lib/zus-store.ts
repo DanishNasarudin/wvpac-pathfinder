@@ -1,4 +1,4 @@
-import { Point } from "@/prisma/generated/prisma";
+import { Point, Room } from "@/prisma/generated/prisma";
 import { EdgeWithName, FloorWithPointsEdgesRooms } from "@/services/actions";
 import { create } from "zustand";
 import { handleError } from "./utils";
@@ -8,13 +8,15 @@ type FloorStore = {
   floorNum: number;
   points: Point[];
   edges: EdgeWithName[];
+  rooms: Room[];
   pendingAdd: boolean;
   junctionAdd: boolean;
   junctionFrom: string;
   edit: boolean;
   deletedPointIds: number[];
   deletedEdgeIds: number[];
-  setEdit: () => void;
+  deletedRoomIds: number[];
+  setEdit: (newValue?: boolean) => void;
   reset: () => void;
   initData: (newValue: FloorWithPointsEdgesRooms) => void;
   triggerAddPoint: () => void;
@@ -27,6 +29,9 @@ type FloorStore = {
   addEdge: (newEdge: EdgeWithName) => void;
   updateEdge: (newEdge: EdgeWithName) => void;
   deleteEdge: (id: number) => void;
+  addRoom: (newRoom: Room) => void;
+  updateRoom: (newRoom: Room) => void;
+  deleteRoom: (id: number) => void;
 };
 
 export const useFloorStore = create<FloorStore>()((set) => ({
@@ -34,30 +39,38 @@ export const useFloorStore = create<FloorStore>()((set) => ({
   floorNum: -1,
   points: [],
   edges: [],
+  rooms: [],
   pendingAdd: false,
   junctionAdd: false,
   junctionFrom: "",
   edit: false,
   deletedPointIds: [],
   deletedEdgeIds: [],
-  setEdit: () => set((state) => ({ edit: !state.edit })),
+  deletedRoomIds: [],
+  setEdit: (newValue) =>
+    set((state) => ({
+      edit: typeof newValue !== "undefined" ? newValue : !state.edit,
+    })),
   reset: () =>
     set(() => ({
       id: -1,
       floorNum: -1,
       points: [],
       edges: [],
+      rooms: [],
       pendingAdd: false,
       junctionAdd: false,
       edit: false,
       deletedPointIds: [],
       deletedEdgeIds: [],
+      deletedRoomIds: [],
     })),
   initData: (newValue) =>
     set({
       id: newValue.id,
       points: newValue.points,
       edges: newValue.edges,
+      rooms: newValue.rooms,
       floorNum: Number(newValue.name.split(" ")[1]) || -1,
     }),
   triggerAddPoint: () => set(() => ({ pendingAdd: true })),
@@ -171,5 +184,38 @@ export const useFloorStore = create<FloorStore>()((set) => ({
       const filteredEdges = state.edges.filter((item) => item.id !== id);
 
       return { edges: [...filteredEdges] };
+    }),
+  addRoom: (newRoom) =>
+    set((state) => {
+      const lastId = state.rooms.findLast((item) => item.id);
+
+      const newId = lastId !== undefined ? lastId.id + 1 : 1;
+
+      const toAddRoom = { ...newRoom, id: newId };
+
+      return { rooms: [...state.rooms, toAddRoom] };
+    }),
+  updateRoom: (newRoom) =>
+    set((state) => {
+      const updatedRoom = state.rooms.map((item) =>
+        item.id === newRoom.id ? newRoom : item
+      );
+
+      return { rooms: [...updatedRoom] };
+    }),
+  deleteRoom: (id) =>
+    set((state) => {
+      const filtered = state.rooms.filter((item) => item.id !== id);
+      const deleteRooms = state.rooms
+        .filter((item) => item.id === id)
+        .map((item) => item.id);
+
+      return {
+        rooms: [...filtered],
+        deletedRoomIds:
+          deleteRooms.length > 0
+            ? [...state.deletedRoomIds, ...deleteRooms]
+            : state.deletedRoomIds,
+      };
     }),
 }));

@@ -1,7 +1,7 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { Edge, Point, Prisma } from "@/prisma/generated/prisma";
+import prisma from "@/lib/prisma";
+import { Edge, Point, Prisma, Room } from "@/prisma/generated/prisma";
 import { revalidatePath } from "next/cache";
 
 export async function addFloor({ name, src }: { name: string; src: string }) {
@@ -127,12 +127,16 @@ export async function updateFloor({
   id,
   points,
   edges,
+  rooms,
   deletedPointIds = [],
+  deletedRoomIds = [],
 }: {
   id: number;
   points: Point[];
   edges: Edge[];
+  rooms: Room[];
   deletedPointIds?: number[];
+  deletedRoomIds?: number[];
 }) {
   try {
     const result = await prisma.floor.update({
@@ -145,22 +149,61 @@ export async function updateFloor({
             deletedPointIds.length > 0
               ? { id: { in: deletedPointIds } }
               : undefined,
-          connectOrCreate: points.map((p) => ({
+          upsert: points.map((p) => ({
             where: p.id ? { id: p.id } : { id: -1 },
             create: {
               name: p.name,
               type: p.type,
               x: p.x,
               y: p.y,
+              ...(p.roomId && {
+                room: {
+                  connect: {
+                    id: p.roomId,
+                  },
+                },
+              }),
+            },
+            update: {
+              name: p.name,
+              type: p.type,
+              x: p.x,
+              y: p.y,
+              ...(p.roomId && {
+                room: {
+                  connect: {
+                    id: p.roomId,
+                  },
+                },
+              }),
             },
           })),
         },
         edges: {
-          connectOrCreate: edges.map((e) => ({
+          upsert: edges.map((e) => ({
             where: e.id ? { id: e.id } : { id: -1 },
             create: {
               fromId: e.fromId,
               toId: e.toId,
+            },
+            update: {
+              fromId: e.fromId,
+              toId: e.toId,
+            },
+          })),
+        },
+        rooms: {
+          deleteMany:
+            deletedRoomIds.length > 0
+              ? { id: { in: deletedRoomIds } }
+              : undefined,
+          upsert: rooms.map((r) => ({
+            where: r.id ? { id: r.id } : { id: -1 },
+            create: {
+              name: r.name,
+            },
+            update: {
+              name: r.name,
             },
           })),
         },

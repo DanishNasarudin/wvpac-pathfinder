@@ -12,8 +12,18 @@ export default function EditButton({
   isProduction: boolean;
   data: FloorWithPointsEdgesRooms;
 }) {
-  const { id, points, edges, reset, edit, setEdit, initData, deletedPointIds } =
-    useFloorStore();
+  const {
+    id,
+    points,
+    edges,
+    rooms,
+    reset,
+    edit,
+    setEdit,
+    initData,
+    deletedPointIds,
+    deletedRoomIds,
+  } = useFloorStore();
 
   useEffect(() => {
     if (id !== -1 && !edit) {
@@ -23,7 +33,9 @@ export default function EditButton({
             id,
             points,
             edges,
+            rooms,
             deletedPointIds,
+            deletedRoomIds,
           }).then(({ error }) => {
             if (error) throw new Error(error);
           }),
@@ -33,8 +45,6 @@ export default function EditButton({
             error: "Data failed to save!",
           }
         );
-    }
-    if (!edit && points.length > 0) {
       reset();
     }
   }, [edit, points, edges]);

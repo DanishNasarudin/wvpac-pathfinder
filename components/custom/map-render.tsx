@@ -82,8 +82,6 @@ export default function MapRender({
     [edit, edgePaths, pointCircleEdit, paths]
   );
 
-  console.log(points, edit, pointCircleEdit, "CK");
-
   useEffect(() => {
     const src = data.src;
     if (!src) return;

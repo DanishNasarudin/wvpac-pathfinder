@@ -1,7 +1,7 @@
 "use client";
 
 import { useFloorStore } from "@/lib/zus-store";
-import { Point } from "@/prisma/generated/prisma";
+import { Point, Room } from "@/prisma/generated/prisma";
 import {
   ChevronDownIcon,
   ChevronLeftIcon,
@@ -9,20 +9,49 @@ import {
   ChevronUpIcon,
   MinusIcon,
 } from "lucide-react";
-import { ChangeEvent } from "react";
+import { ChangeEvent, useMemo } from "react";
 import { useShallow } from "zustand/shallow";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import DropdownSearch from "./dropdown-search";
 
-export default function EditRow({ data }: { data: Point }) {
+export default function EditRow({
+  data,
+  options = [],
+}: {
+  data: Point;
+  options?: Room[];
+}) {
   const initType: string[] = [];
+  const initRoom: { id: string; name: string }[] = [];
   if (initType.length === 0) {
     initType.push(data.type);
     if (data.type === "point") {
       initType.push("junction");
     } else {
       initType.push("point");
+    }
+  }
+
+  const initRoomValue = useMemo(
+    () =>
+      options
+        .map((i) => ({ id: String(i.id), name: i.name }))
+        .find((o) => o.id === String(data.roomId)) || undefined,
+    [options, data.roomId]
+  );
+
+  if (initRoom.length === 0 && options) {
+    if (initRoomValue) {
+      initRoom.push(initRoomValue);
+      for (let i in options) {
+        if (options[i].name !== initRoomValue.name)
+          initRoom.push({ id: String(options[i].id), name: options[i].name });
+      }
+    } else {
+      for (let i in options) {
+        initRoom.push({ id: String(options[i].id), name: options[i].name });
+      }
     }
   }
 
@@ -33,8 +62,15 @@ export default function EditRow({ data }: { data: Point }) {
 
   if (data.id === -1) return <></>;
 
-  const handleTypeChange = (newValue: string, id: string) => {
-    updatePoint({ ...data, type: newValue as "point" | "junction" });
+  const handleDropdownChange = (newValue: string, id: string) => {
+    if (id === "type") {
+      updatePoint({ ...data, type: newValue as "point" | "junction" });
+    } else if (id === "room") {
+      updatePoint({
+        ...data,
+        roomId: newValue !== "null" ? Number(newValue) : null,
+      });
+    }
   };
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -65,8 +101,19 @@ export default function EditRow({ data }: { data: Point }) {
           id="type"
           lists={initType}
           valueInput={data.type}
-          onValueChange={handleTypeChange}
+          onValueChange={handleDropdownChange}
           width="w-[150px]"
+        />
+      </td>
+      <td>
+        <DropdownSearch
+          id="room"
+          lists={initRoom}
+          valueInput={initRoomValue ? initRoomValue.id : undefined}
+          onValueChange={handleDropdownChange}
+          placeholder="Select room.."
+          width="w-[150px]"
+          allowDeselect
         />
       </td>
       <td>
