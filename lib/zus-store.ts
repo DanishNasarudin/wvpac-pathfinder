@@ -15,6 +15,12 @@ type FloorStore = {
   junctionAdd: boolean;
   junctionFrom: string;
   edit: boolean;
+  newPoints: Point[];
+  newEdges: EdgeWithName[];
+  newRooms: Room[];
+  updatedPoints: Point[];
+  updatedEdges: EdgeWithName[];
+  updatedRooms: Room[];
   deletedPointIds: number[];
   deletedEdgeIds: number[];
   deletedRoomIds: number[];
@@ -53,6 +59,12 @@ const DEFAULT = {
   junctionAdd: false,
   junctionFrom: "",
   edit: false,
+  newPoints: [],
+  newEdges: [],
+  newRooms: [],
+  updatedPoints: [],
+  updatedEdges: [],
+  updatedRooms: [],
   deletedPointIds: [],
   deletedEdgeIds: [],
   deletedRoomIds: [],
@@ -97,7 +109,18 @@ export const useFloorStore = create<FloorStore>()((set) => ({
 
       if (toAddPoint.id === -1) handleError("Adding Point failed. Id invalid");
 
-      return { points: [...state.points, toAddPoint], pendingAdd: false };
+      return {
+        points: [...state.points, toAddPoint],
+        pendingAdd: false,
+        newPoints: [
+          ...state.newPoints,
+          {
+            ...newPoint,
+            id: -newId,
+            name: newPoint.name === "" ? "enter a name" : newPoint.name,
+          },
+        ],
+      };
     }),
   updatePoint: (newPoint) =>
     set((state) => {
@@ -105,7 +128,24 @@ export const useFloorStore = create<FloorStore>()((set) => ({
         item.id === newPoint.id ? newPoint : item
       );
 
-      return { points: [...updatedPoint] };
+      const isNew = state.newPoints.some((p) => Math.abs(p.id) === newPoint.id);
+      const newPoints = isNew
+        ? state.newPoints.map((p) =>
+            Math.abs(p.id) === newPoint.id ? newPoint : p
+          )
+        : state.newPoints;
+
+      const updatedPoints = isNew
+        ? state.updatedPoints
+        : state.updatedPoints.some((p) => p.id === newPoint.id)
+        ? state.updatedPoints.map((p) => (p.id === newPoint.id ? newPoint : p))
+        : [...state.updatedPoints, newPoint];
+
+      return {
+        points: [...updatedPoint],
+        newPoints,
+        updatedPoints,
+      };
     }),
   deletePoint: (id) =>
     set((state) => {
@@ -173,7 +213,10 @@ export const useFloorStore = create<FloorStore>()((set) => ({
 
       const toAddEdge = { ...newEdge };
 
-      return { edges: [...state.edges, toAddEdge] };
+      return {
+        edges: [...state.edges, toAddEdge],
+        newEdges: [...state.newEdges, newEdge],
+      };
     }),
   updateEdge: (newEdge) =>
     set((state) => {
@@ -181,13 +224,37 @@ export const useFloorStore = create<FloorStore>()((set) => ({
         item.id === newEdge.id ? newEdge : item
       );
 
-      return { edges: [...updatedEdge] };
+      const isNew = state.newEdges.some((e) => e.id === newEdge.id);
+      const newEdges = isNew
+        ? state.newEdges.map((e) => (e.id === newEdge.id ? newEdge : e))
+        : state.newEdges;
+
+      const updatedEdges = isNew
+        ? state.updatedEdges
+        : state.updatedEdges.some((e) => e.id === newEdge.id)
+        ? state.updatedEdges.map((e) => (e.id === newEdge.id ? newEdge : e))
+        : [...state.updatedEdges, newEdge];
+
+      return {
+        edges: [...updatedEdge],
+        newEdges,
+        updatedEdges,
+      };
     }),
   deleteEdge: (id) =>
     set((state) => {
       const filteredEdges = state.edges.filter((item) => item.id !== id);
+      const deleteEdges = state.edges
+        .filter((item) => item.id === id)
+        .map((item) => item.id);
 
-      return { edges: [...filteredEdges] };
+      return {
+        edges: [...filteredEdges],
+        deletedEdgeIds:
+          deleteEdges.length > 0
+            ? [...state.deletedEdgeIds, ...deleteEdges]
+            : state.deletedEdgeIds,
+      };
     }),
   addRoom: (newRoom) =>
     set((state) => {
@@ -197,7 +264,10 @@ export const useFloorStore = create<FloorStore>()((set) => ({
 
       const toAddRoom = { ...newRoom, id: newId };
 
-      return { rooms: [...state.rooms, toAddRoom] };
+      return {
+        rooms: [...state.rooms, toAddRoom],
+        newRooms: [...state.newRooms, { ...newRoom, id: -newId }],
+      };
     }),
   updateRoom: (newRoom) =>
     set((state) => {
@@ -205,7 +275,24 @@ export const useFloorStore = create<FloorStore>()((set) => ({
         item.id === newRoom.id ? newRoom : item
       );
 
-      return { rooms: [...updatedRoom] };
+      const isNew = state.newRooms.some((r) => Math.abs(r.id) === newRoom.id);
+      const newRooms = isNew
+        ? state.newRooms.map((r) =>
+            Math.abs(r.id) === newRoom.id ? newRoom : r
+          )
+        : state.newRooms;
+
+      const updatedRooms = isNew
+        ? state.updatedRooms
+        : state.updatedRooms.some((r) => r.id === newRoom.id)
+        ? state.updatedRooms.map((r) => (r.id === newRoom.id ? newRoom : r))
+        : [...state.updatedRooms, newRoom];
+
+      return {
+        rooms: [...updatedRoom],
+        newRooms,
+        updatedRooms,
+      };
     }),
   deleteRoom: (id) =>
     set((state) => {

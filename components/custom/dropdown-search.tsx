@@ -64,8 +64,8 @@ export default function DropdownSearch({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            width === "none" ? "w-[200px]" : width,
-            "justify-between text-ellipsis overflow-hidden text-xs w-full"
+            width === "none" ? "" : width,
+            "justify-between overflow-hidden text-xs w-full"
           )}
         >
           <p className="truncate">{selected ? selected.name : placeholder}</p>
@@ -73,9 +73,7 @@ export default function DropdownSearch({
             <Badge className="text-xs">Start</Badge>
           )}
           {isEnd && selected?.id === isEnd && isStart !== isEnd && (
-            <Badge className="text-xs" variant={"destructive"}>
-              Destination
-            </Badge>
+            <Badge className="text-xs bg-green-600">Destination</Badge>
           )}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
@@ -118,9 +116,11 @@ export default function DropdownSearch({
                     )}
                   />
                   {item.name}
-                  {isStart && item.id === isStart && <Badge>Start</Badge>}
-                  {isEnd && item.id === isEnd && (
-                    <Badge variant={"destructive"}>Destination</Badge>
+                  {isStart && item.id === isStart && isStart !== isEnd && (
+                    <Badge className="text-xs">Start</Badge>
+                  )}
+                  {isEnd && item.id === isEnd && isStart !== isEnd && (
+                    <Badge className="text-xs bg-green-600">Destination</Badge>
                   )}
                 </CommandItem>
               ))}

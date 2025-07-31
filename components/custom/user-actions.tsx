@@ -114,13 +114,13 @@ export default function UserActions({ allPoints, floors, floorId }: Props) {
   }, [end]);
 
   return (
-    <div className="flex gap-2">
-      <div className="flex-1/2 flex flex-col gap-2 text-xs text-foreground/80">
+    <div className="flex-1 grid grid-cols-4">
+      <div className="col-span-1 flex flex-col gap-2 text-xs text-foreground/80">
         <div className="h-9 flex items-center">From</div>
         <div className="h-9 flex items-center">To</div>
         <div></div>
       </div>
-      <div className="flex-1 flex flex-col gap-2">
+      <div className="col-span-3 flex flex-col gap-2 w-full">
         <DropdownSearch
           id="start"
           lists={allPoints}
@@ -151,6 +151,8 @@ export default function UserActions({ allPoints, floors, floorId }: Props) {
               copy(urlToCopy);
               toast.success("Copied link!");
             }}
+            variant={"outline"}
+            size={"sm"}
           >
             Share <Share />
           </Button>

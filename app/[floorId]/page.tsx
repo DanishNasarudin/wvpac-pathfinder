@@ -6,6 +6,7 @@ import SvgRegistryList from "@/components/custom/svg-registry-list";
 import UserActions from "@/components/custom/user-actions";
 import prisma from "@/lib/prisma";
 import { getFloorById, getInterFloorEdges } from "@/services/actions";
+import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 
 const production = process.env.NODE_ENV === "production";
@@ -52,7 +53,7 @@ export default async function Page({
 
   return (
     <div className="flex-1 w-full relative">
-      <div className="h-[50vh] bg-zinc-500 overflow-clip flex justify-center items-center">
+      <div className="h-[60vh] bg-zinc-500 overflow-clip flex justify-center items-center border border-b-1">
         {floor ? (
           <MapRender
             allEdges={allEdges}
@@ -61,23 +62,20 @@ export default async function Page({
             data={floor}
           />
         ) : (
-          "Map"
+          <Loader2 className="animate-spin text-white" />
         )}
       </div>
-      <div className="w-max mx-auto p-4">
-        <div>
-          <p>Public</p>
-          <Suspense>
-            <UserActions
-              allPoints={allRooms.map((p) => ({
-                id: String(p.id),
-                name: p.name,
-              }))}
-              floors={svgList}
-              floorId={Number(floorId)}
-            />
-          </Suspense>
-        </div>
+      <div className="max-w-[400px] w-full mx-auto p-4 space-y-2">
+        <Suspense>
+          <UserActions
+            allPoints={allRooms.map((p) => ({
+              id: String(p.id),
+              name: p.name,
+            }))}
+            floors={svgList}
+            floorId={Number(floorId)}
+          />
+        </Suspense>
         {!production && (
           <div>
             <p>Admin Actions</p>

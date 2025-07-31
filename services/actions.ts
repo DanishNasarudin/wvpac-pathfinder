@@ -280,3 +280,141 @@ export async function getInterFloorEdges() {
     }
   }
 }
+
+type PointNew = {
+  name: string;
+  type: string;
+  x: number;
+  y: number;
+  roomId: number | null;
+};
+type PointUpdate = { id: number } & PointNew;
+
+type EdgeNew = {
+  fromId: number;
+  toId: number;
+};
+type EdgeUpdate = { id: number } & EdgeNew;
+
+type RoomNew = {
+  name: string;
+};
+type RoomUpdate = { id: number } & RoomNew;
+
+// 2. Bundle into a single params type:
+interface UpdateFloorParams {
+  id: number;
+
+  newPoints: PointNew[];
+  updatedPoints: PointUpdate[];
+  deletedPointIds: number[];
+
+  newEdges: EdgeNew[];
+  updatedEdges: EdgeUpdate[];
+  deletedEdgeIds: number[];
+
+  newRooms: RoomNew[];
+  updatedRooms: RoomUpdate[];
+  deletedRoomIds: number[];
+
+  interFloor: Edge[];
+  deletedInterFloorIds: number[];
+}
+
+// 3. Use nested creates/updates/deletes in Prisma:
+export async function updateFloorOptimised(params: UpdateFloorParams) {
+  try {
+    const {
+      id,
+      newPoints,
+      updatedPoints,
+      deletedPointIds,
+      newEdges,
+      updatedEdges,
+      deletedEdgeIds,
+      newRooms,
+      updatedRooms,
+      deletedRoomIds,
+      interFloor,
+      deletedInterFloorIds,
+    } = params;
+
+    const result = await prisma.floor.update({
+      where: { id },
+      data: {
+        points: {
+          create: newPoints,
+          update: updatedPoints.map((p) => ({
+            where: { id: p.id },
+            data: {
+              name: p.name,
+              type: p.type,
+              x: p.x,
+              y: p.y,
+              roomId: p.roomId,
+            },
+          })),
+          deleteMany: deletedPointIds.length
+            ? { id: { in: deletedPointIds } }
+            : undefined,
+        },
+        edges: {
+          create: newEdges,
+          update: updatedEdges.map((e) => ({
+            where: { id: e.id },
+            data: { fromId: e.fromId, toId: e.toId },
+          })),
+          deleteMany: deletedEdgeIds.length
+            ? { id: { in: deletedEdgeIds } }
+            : undefined,
+        },
+        rooms: {
+          create: newRooms,
+          update: updatedRooms.map((r) => ({
+            where: { id: r.id },
+            data: { name: r.name },
+          })),
+          deleteMany: deletedRoomIds.length
+            ? { id: { in: deletedRoomIds } }
+            : undefined,
+        },
+      },
+    });
+
+    await prisma.$transaction(
+      interFloor.map(
+        (i) =>
+          prisma.edge.upsert({
+            where: { id: i.id !== -1 ? i.id : -1 },
+            create: {
+              fromId: i.fromId,
+              toId: i.toId,
+            },
+            update: {
+              fromId: i.fromId,
+              toId: i.toId,
+            },
+          }) as Prisma.PrismaPromise<Edge>
+      )
+    );
+
+    if (deletedInterFloorIds.length > 0) {
+      await prisma.edge.deleteMany({
+        where: {
+          id: { in: deletedInterFloorIds },
+        },
+      });
+    }
+
+    revalidatePath("/");
+
+    return { result };
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    } else {
+      return { error: "Unknown Error" };
+    }
+  }
+}

@@ -4,7 +4,7 @@ import { Point } from "@/prisma/generated/prisma";
 import {
   EdgeWithName,
   FloorWithPointsEdgesRooms,
-  updateFloor,
+  updateFloorOptimised,
 } from "@/services/actions";
 import { useEffect } from "react";
 import { toast } from "sonner";
@@ -23,9 +23,12 @@ export default function EditButton({
 }) {
   const {
     id,
-    points,
-    edges,
-    rooms,
+    newPoints,
+    newEdges,
+    newRooms,
+    updatedPoints,
+    updatedEdges,
+    updatedRooms,
     interFloor,
     reset,
     edit,
@@ -34,6 +37,7 @@ export default function EditButton({
     initInterFloor,
     deletedPointIds,
     deletedRoomIds,
+    deletedEdgeIds,
     deletedInterFloorIds,
   } = useFloorStore();
 
@@ -41,15 +45,19 @@ export default function EditButton({
     if (id !== -1 && !edit) {
       !isProduction &&
         toast.promise(
-          updateFloor({
+          updateFloorOptimised({
             id,
-            points,
-            edges,
-            rooms,
+            newPoints: newPoints.map(({ id, floorId, ...p }) => p),
+            newEdges: newEdges.map(({ id, floorId, from, to, ...e }) => e),
+            newRooms: newRooms.map(({ id, floorId, ...r }) => r),
+            updatedPoints,
+            updatedEdges,
+            updatedRooms,
             deletedPointIds,
             deletedRoomIds,
             deletedInterFloorIds,
             interFloor,
+            deletedEdgeIds,
           }).then(({ error }) => {
             if (error) throw new Error(error);
           }),
@@ -61,7 +69,7 @@ export default function EditButton({
         );
       reset();
     }
-  }, [edit, points, edges]);
+  }, [edit, id]);
 
   useEffect(() => {
     if (!edit || !data || id !== -1) return;

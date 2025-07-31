@@ -232,8 +232,8 @@ export default function MapRender({
     <MapContainer
       crs={L.CRS.Simple}
       bounds={bounds}
-      minZoom={-1}
-      style={{ height: "50vh", width: "100%", zIndex: 4 }}
+      minZoom={isMobile ? -0.2 : 0.4}
+      style={{ height: "60vh", width: "100%", zIndex: 4 }}
       attributionControl={false}
       zoomControl={false}
       zoomSnap={isMobile ? 0 : 1}
@@ -241,7 +241,7 @@ export default function MapRender({
     >
       <MapClickHandler mapHeight={MAP_HEIGHT} />
       <MapAnimatedPath points={positions} />
-      <MapFitBounds positions={positions} padding={50} />
+      <MapFitBounds positions={positions} padding={100} />
       <SVGOverlay bounds={bounds} interactive className="!z-[2]">
         <svg
           viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
