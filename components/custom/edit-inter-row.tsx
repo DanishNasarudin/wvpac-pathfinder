@@ -23,8 +23,6 @@ export default function EditInterRow({
   },
   options = [],
 }: Props) {
-  if (data.id === -1) return <></>;
-
   const deleteInterFloor = useFloorStore(
     useShallow((state) => state.deleteInterFloor)
   );

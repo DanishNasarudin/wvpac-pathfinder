@@ -1,6 +1,7 @@
 "use client";
-import { useFloorStore } from "@/lib/zus-store";
-import { Point } from "@/prisma/generated/prisma";
+import { getRenderPathsForRooms } from "@/lib/utils";
+import { useFloorStore, useUserStore } from "@/lib/zus-store";
+import { Edge, Point } from "@/prisma/generated/prisma";
 import { FloorWithPointsEdgesRooms } from "@/services/actions";
 import L from "leaflet";
 import "leaflet-defaulticon-compatibility";
@@ -16,15 +17,20 @@ import React, {
 } from "react";
 import { MapContainer, SVGOverlay, ZoomControl } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
+import MapAnimatedPath from "./map-animated-path";
 import MapClickHandler from "./map-click-handler";
 import MapFitBounds from "./map-fit-bounds";
 import MapPointCircle from "./map-point-circle";
 
 export default function MapRender({
-  path = [],
+  allEdges,
+  allPoints,
+  currentFloorPoints,
   data,
 }: {
-  path: Point[];
+  allEdges: Edge[];
+  allPoints: Point[];
+  currentFloorPoints: Point[];
   data: FloorWithPointsEdgesRooms;
 }) {
   const MAP_HEIGHT = 400;
@@ -33,14 +39,30 @@ export default function MapRender({
   const [paths, setPaths] = useState<React.ReactNode[]>([]);
   const [isPending, startTransition] = useTransition();
 
+  const { fromId, toId } = useUserStore();
+
   const bounds: [[number, number], [number, number]] = [
     [0, 0],
     [MAP_HEIGHT, MAP_WIDTH],
   ];
 
+  const renderFullPaths = useMemo(() => {
+    if (!(fromId && toId)) return [];
+
+    const result = getRenderPathsForRooms(
+      fromId,
+      toId,
+      allEdges,
+      allPoints,
+      currentFloorPoints
+    );
+
+    return result;
+  }, [fromId, toId, currentFloorPoints, allEdges, allPoints]);
+
   const positions: [number, number][] = useMemo(
-    () => path.map((p) => [1000 - p.y, p.x]),
-    [path]
+    () => renderFullPaths.map((p) => [MAP_HEIGHT - p.y, p.x]),
+    [renderFullPaths]
   );
 
   const { id, points, edges, initData, edit } = useFloorStore();
@@ -200,6 +222,12 @@ export default function MapRender({
     });
   }, [data.src]);
 
+  if (isPending) {
+    return (
+      <div className="h-[60vh] w-full animate-pulse bg-foreground/10"></div>
+    );
+  }
+
   return (
     <MapContainer
       crs={L.CRS.Simple}
@@ -212,7 +240,7 @@ export default function MapRender({
       className="bg-white!"
     >
       <MapClickHandler mapHeight={MAP_HEIGHT} />
-      {/* <AnimatedPath points={positions} /> */}
+      <MapAnimatedPath points={positions} />
       <MapFitBounds positions={positions} padding={50} />
       <SVGOverlay bounds={bounds} interactive className="!z-[2]">
         <svg

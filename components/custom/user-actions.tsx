@@ -1,7 +1,7 @@
 "use client";
 import { createURL } from "@/lib/utils";
-import { useFloorStore } from "@/lib/zus-store";
-import { Floor } from "@/prisma/generated/prisma";
+import { useFloorStore, useUserStore } from "@/lib/zus-store";
+import { Prisma } from "@/prisma/generated/prisma";
 import { Share } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
@@ -10,23 +10,36 @@ import { useCopyToClipboard } from "usehooks-ts";
 import { Button } from "../ui/button";
 import DropdownSearch from "./dropdown-search";
 
+type FloorWithPointIds = Prisma.FloorGetPayload<{
+  include: {
+    rooms: {
+      select: {
+        id: true;
+      };
+    };
+  };
+}>;
+
 type Props = {
   allPoints: { id: string; name: string }[];
-  floors: Floor[];
+  floors: FloorWithPointIds[];
+  floorId: number;
 };
 
-export default function UserActions({ allPoints, floors }: Props) {
-  const [start, setStart] = useState("");
-  const [end, setEnd] = useState("");
-  const [floor, setFloor] = useState("");
-
-  const isProduction = process.env.NODE_ENV === "production";
-
+export default function UserActions({ allPoints, floors, floorId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const [start, setStart] = useState(() => searchParams.get("start") ?? "");
+  const [end, setEnd] = useState(() => searchParams.get("end") ?? "");
+  const [floor, setFloor] = useState(String(floorId) ?? "");
+
   const setSearchParams = new URLSearchParams(searchParams);
   const [_, copy] = useCopyToClipboard();
+
+  const { setEdit } = useFloorStore();
+  const { setFromId, setToId } = useUserStore();
 
   let fullUrl = "";
 
@@ -34,59 +47,36 @@ export default function UserActions({ allPoints, floors }: Props) {
     fullUrl = `${window.location.protocol}//${window.location.host}`;
   }
 
-  useEffect(() => {
-    if (start) {
-      setSearchParams.set("start", start);
-    } else {
-      setSearchParams.delete("start");
-    }
-    if (end) {
-      setSearchParams.set("end", end);
-    } else {
-      setSearchParams.delete("end");
-    }
-    if (floor) {
-      setSearchParams.set("f", floor);
-    } else {
-      setSearchParams.delete("f");
-    }
+  const startFloorNum = useMemo(() => {
+    const startFloor = floors.find((i) =>
+      i.rooms.some((p) => p.id === Number(start))
+    );
 
-    const setURL = createURL(`${pathname}/`, setSearchParams);
-    router.push(setURL);
-  }, [pathname, searchParams, start, end, floor]);
+    return startFloor ? startFloor.id : null;
+  }, [start, floors]);
 
-  useEffect(() => {
-    const paramStart = setSearchParams.get("start");
-    const paramEnd = setSearchParams.get("end");
-    const paramFloor = setSearchParams.get("floor");
+  const endFloorNum = useMemo(() => {
+    const endFloor = floors.find((i) =>
+      i.rooms.some((p) => p.id === Number(end))
+    );
+    return endFloor ? endFloor.id : null;
+  }, [end, floors]);
 
-    if (!paramStart || !paramEnd || !paramFloor) return;
-
-    setStart(paramStart);
-    setEnd(paramEnd);
-    setFloor(paramFloor);
-  }, [setSearchParams]);
-
-  const { id, points, edges, setEdit } = useFloorStore();
+  const urlToCopy = useMemo(
+    () => createURL(`${fullUrl}${pathname}`, setSearchParams),
+    [fullUrl, pathname, setSearchParams]
+  );
 
   const handleChangeValue = (newValue: string, id: string) => {
     switch (id) {
       case "start": {
         setStart(newValue);
-        const startFloor = newValue.match(/(?<=-)\d+(?=-)/);
-
-        if (startFloor) {
-          setFloor(`Floor ${parseInt(startFloor[0], 10)}`);
-        }
+        setFromId(Number(newValue));
         break;
       }
       case "end": {
         setEnd(newValue);
-        const startFloor = start.match(/(?<=-)\d+(?=-)/);
-
-        if (startFloor) {
-          setFloor(`Floor ${parseInt(startFloor[0], 10)}`);
-        }
+        setToId(Number(newValue));
         break;
       }
       case "floor":
@@ -98,24 +88,30 @@ export default function UserActions({ allPoints, floors }: Props) {
     }
   };
 
-  const startFloorNum = useMemo(() => {
-    const startFloor = start.match(/(?<=-)\d+(?=-)/);
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (start) params.set("start", start);
+    if (end) params.set("end", end);
 
-    return startFloor ? parseInt(startFloor[0], 10) : null;
+    const newUrl = createURL(pathname, params);
+    window.history.replaceState(null, "", newUrl);
+  }, [pathname, start, end]);
+
+  useEffect(() => {
+    if (!floor) return;
+    const params = new URLSearchParams(window.location.search);
+
+    const newUrl = createURL(`/${floor}`, params);
+    router.push(newUrl);
+  }, [floor, pathname, router]);
+
+  useEffect(() => {
+    if (start) setFromId(Number(start));
   }, [start]);
 
-  const endFloorNum = useMemo(() => {
-    const endFloor = end.match(/(?<=-)\d+(?=-)/);
-    return endFloor ? parseInt(endFloor[0], 10) : null;
+  useEffect(() => {
+    if (end) setToId(Number(end));
   }, [end]);
-
-  const [qrDialog, setQrDialog] = useState(false);
-  const [qrError, setQrError] = useState(false);
-
-  const urlToCopy = useMemo(
-    () => createURL(`${fullUrl}${pathname}`, setSearchParams),
-    [fullUrl, pathname, setSearchParams]
-  );
 
   return (
     <div className="flex gap-2">
@@ -144,8 +140,8 @@ export default function UserActions({ allPoints, floors }: Props) {
           lists={floors.map((i) => ({ id: String(i.id), name: i.name }))}
           onValueChange={handleChangeValue}
           valueInput={floor || "1"}
-          isStart={startFloorNum ? `Floor ${startFloorNum}` : ""}
-          isEnd={endFloorNum ? `Floor ${endFloorNum}` : ""}
+          isStart={`${startFloorNum}`}
+          isEnd={`${endFloorNum}`}
           noSearch
         />
         <div className="flex gap-2">

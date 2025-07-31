@@ -169,11 +169,9 @@ export const useFloorStore = create<FloorStore>()((set) => ({
       // if (lastId === undefined)
       //   handleError("Adding Edge failed. Last id not found.");
 
-      const newId = lastId !== undefined ? lastId?.id + 1 : 1;
+      const newId = lastId !== undefined ? lastId.id + 1 : 1;
 
-      const toAddEdge = { ...newEdge, id: newId };
-
-      if (toAddEdge.id === -1) handleError("Adding Edge failed. Id invalid");
+      const toAddEdge = { ...newEdge };
 
       return { edges: [...state.edges, toAddEdge] };
     }),
@@ -228,9 +226,9 @@ export const useFloorStore = create<FloorStore>()((set) => ({
     set((state) => {
       const lastId = state.interFloor.findLast((item) => item.id);
 
-      const newId = lastId !== undefined ? lastId.id + 1 : 1;
+      //   const newId = lastId !== undefined ? lastId.id + 1 : 1;
 
-      const toAddInterFloor = { ...newInterFloor, id: newId };
+      const toAddInterFloor = { ...newInterFloor };
 
       return { interFloor: [...state.interFloor, toAddInterFloor] };
     }),
@@ -257,4 +255,22 @@ export const useFloorStore = create<FloorStore>()((set) => ({
             : state.deletedInterFloorIds,
       };
     }),
+}));
+
+type UserStore = {
+  fromId: number;
+  toId: number;
+  setFromId: (newValue: number) => void;
+  setToId: (newValue: number) => void;
+};
+
+const USER_DEFAULT = {
+  fromId: -1,
+  toId: -1,
+};
+
+export const useUserStore = create<UserStore>()((set) => ({
+  ...USER_DEFAULT,
+  setFromId: (newValue) => set({ fromId: newValue }),
+  setToId: (newValue) => set({ toId: newValue }),
 }));

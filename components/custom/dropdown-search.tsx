@@ -69,10 +69,10 @@ export default function DropdownSearch({
           )}
         >
           <p className="truncate">{selected ? selected.name : placeholder}</p>
-          {isStart && selected?.name === isStart && (
+          {isStart && selected?.id === isStart && isStart !== isEnd && (
             <Badge className="text-xs">Start</Badge>
           )}
-          {isEnd && selected?.name === isEnd && (
+          {isEnd && selected?.id === isEnd && isStart !== isEnd && (
             <Badge className="text-xs" variant={"destructive"}>
               Destination
             </Badge>
@@ -118,8 +118,8 @@ export default function DropdownSearch({
                     )}
                   />
                   {item.name}
-                  {isStart && item.name === isStart && <Badge>Start</Badge>}
-                  {isEnd && item.name === isEnd && (
+                  {isStart && item.id === isStart && <Badge>Start</Badge>}
+                  {isEnd && item.id === isEnd && (
                     <Badge variant={"destructive"}>Destination</Badge>
                   )}
                 </CommandItem>

@@ -94,7 +94,11 @@ export async function getFloorById({
         id,
       },
       include: {
-        points: true,
+        points: {
+          orderBy: {
+            id: "asc",
+          },
+        },
         edges: {
           include: {
             from: {
@@ -129,6 +133,7 @@ export async function updateFloor({
   edges,
   rooms,
   deletedPointIds = [],
+  deletedEdgeIds = [],
   deletedRoomIds = [],
   deletedInterFloorIds = [],
   interFloor = [],
@@ -138,6 +143,7 @@ export async function updateFloor({
   edges: Edge[];
   rooms: Room[];
   deletedPointIds?: number[];
+  deletedEdgeIds?: number[];
   deletedRoomIds?: number[];
   deletedInterFloorIds?: number[];
   interFloor: Edge[];
@@ -184,6 +190,10 @@ export async function updateFloor({
           })),
         },
         edges: {
+          deleteMany:
+            deletedEdgeIds.length > 0
+              ? { id: { in: deletedEdgeIds } }
+              : undefined,
           upsert: edges.map((e) => ({
             where: e.id !== -1 ? { id: e.id } : { id: -1 },
             create: {

@@ -120,3 +120,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+.flowing-path {
+  stroke-dasharray: 8 16;
+  animation: dash 1.5s linear infinite;
+}
+
+@keyframes dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
