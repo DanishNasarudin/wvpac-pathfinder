@@ -130,6 +130,8 @@ export async function updateFloor({
   rooms,
   deletedPointIds = [],
   deletedRoomIds = [],
+  deletedInterFloorIds = [],
+  interFloor = [],
 }: {
   id: number;
   points: Point[];
@@ -137,6 +139,8 @@ export async function updateFloor({
   rooms: Room[];
   deletedPointIds?: number[];
   deletedRoomIds?: number[];
+  deletedInterFloorIds?: number[];
+  interFloor: Edge[];
 }) {
   try {
     const result = await prisma.floor.update({
@@ -150,7 +154,7 @@ export async function updateFloor({
               ? { id: { in: deletedPointIds } }
               : undefined,
           upsert: points.map((p) => ({
-            where: p.id ? { id: p.id } : { id: -1 },
+            where: p.id !== -1 ? { id: p.id } : { id: -1 },
             create: {
               name: p.name,
               type: p.type,
@@ -181,7 +185,7 @@ export async function updateFloor({
         },
         edges: {
           upsert: edges.map((e) => ({
-            where: e.id ? { id: e.id } : { id: -1 },
+            where: e.id !== -1 ? { id: e.id } : { id: -1 },
             create: {
               fromId: e.fromId,
               toId: e.toId,
@@ -198,7 +202,7 @@ export async function updateFloor({
               ? { id: { in: deletedRoomIds } }
               : undefined,
           upsert: rooms.map((r) => ({
-            where: r.id ? { id: r.id } : { id: -1 },
+            where: r.id !== -1 ? { id: r.id } : { id: -1 },
             create: {
               name: r.name,
             },
@@ -210,8 +214,53 @@ export async function updateFloor({
       },
     });
 
+    await prisma.$transaction(
+      interFloor.map(
+        (i) =>
+          prisma.edge.upsert({
+            where: { id: i.id !== -1 ? i.id : -1 },
+            create: {
+              fromId: i.fromId,
+              toId: i.toId,
+            },
+            update: {
+              fromId: i.fromId,
+              toId: i.toId,
+            },
+          }) as Prisma.PrismaPromise<Edge>
+      )
+    );
+
+    if (deletedInterFloorIds.length > 0) {
+      await prisma.edge.deleteMany({
+        where: {
+          id: { in: deletedInterFloorIds },
+        },
+      });
+    }
+
     revalidatePath("/");
     return { result };
+  } catch (error) {
+    console.error(error);
+    if (error instanceof Error) {
+      return { error: error.message };
+    } else {
+      return { error: "Unknown Error" };
+    }
+  }
+}
+
+export async function getInterFloorEdges() {
+  try {
+    const edges = await prisma.edge.findMany({
+      include: {
+        from: { select: { floorId: true, name: true } },
+        to: { select: { floorId: true, name: true } },
+      },
+    });
+
+    return { result: edges.filter((e) => e.from.floorId !== e.to.floorId) };
   } catch (error) {
     console.error(error);
     if (error instanceof Error) {

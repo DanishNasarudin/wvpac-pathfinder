@@ -50,8 +50,8 @@ model Point {
 model Edge {
   id Int @id @default(autoincrement())
 
-  floorId Int
-  floor   Floor @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  floorId Int?
+  floor   Floor? @relation(fields: [floorId], references: [id], onDelete: Cascade)
 
   fromId Int
   from   Point @relation("EdgeFrom", fields: [fromId], references: [id], onDelete: Cascade)

@@ -1,6 +1,11 @@
 "use client";
 import { useFloorStore } from "@/lib/zus-store";
-import { FloorWithPointsEdgesRooms, updateFloor } from "@/services/actions";
+import { Point } from "@/prisma/generated/prisma";
+import {
+  EdgeWithName,
+  FloorWithPointsEdgesRooms,
+  updateFloor,
+} from "@/services/actions";
 import { useEffect } from "react";
 import { toast } from "sonner";
 import { Button } from "../ui/button";
@@ -8,21 +13,28 @@ import { Button } from "../ui/button";
 export default function EditButton({
   isProduction,
   data,
+  interFloorEdges,
+  interFloorPoints,
 }: {
   isProduction: boolean;
   data: FloorWithPointsEdgesRooms;
+  interFloorEdges: EdgeWithName[];
+  interFloorPoints: Point[];
 }) {
   const {
     id,
     points,
     edges,
     rooms,
+    interFloor,
     reset,
     edit,
     setEdit,
     initData,
+    initInterFloor,
     deletedPointIds,
     deletedRoomIds,
+    deletedInterFloorIds,
   } = useFloorStore();
 
   useEffect(() => {
@@ -36,6 +48,8 @@ export default function EditButton({
             rooms,
             deletedPointIds,
             deletedRoomIds,
+            deletedInterFloorIds,
+            interFloor,
           }).then(({ error }) => {
             if (error) throw new Error(error);
           }),
@@ -52,6 +66,7 @@ export default function EditButton({
   useEffect(() => {
     if (!edit || !data || id !== -1) return;
     initData(data);
+    initInterFloor(interFloorEdges, interFloorPoints);
   }, [data, edit]);
 
   return (

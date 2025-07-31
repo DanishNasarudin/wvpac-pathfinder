@@ -9,6 +9,8 @@ type FloorStore = {
   points: Point[];
   edges: EdgeWithName[];
   rooms: Room[];
+  interFloorPoints: Point[];
+  interFloor: EdgeWithName[];
   pendingAdd: boolean;
   junctionAdd: boolean;
   junctionFrom: string;
@@ -16,8 +18,10 @@ type FloorStore = {
   deletedPointIds: number[];
   deletedEdgeIds: number[];
   deletedRoomIds: number[];
+  deletedInterFloorIds: number[];
   setEdit: (newValue?: boolean) => void;
   reset: () => void;
+  initInterFloor: (newValue: EdgeWithName[], newOptions: Point[]) => void;
   initData: (newValue: FloorWithPointsEdgesRooms) => void;
   triggerAddPoint: () => void;
   addPoint: (newPoint: Point) => void;
@@ -32,14 +36,19 @@ type FloorStore = {
   addRoom: (newRoom: Room) => void;
   updateRoom: (newRoom: Room) => void;
   deleteRoom: (id: number) => void;
+  addInterFloor: (newInterFloor: EdgeWithName) => void;
+  updateInterFloor: (newInterFloor: EdgeWithName) => void;
+  deleteInterFloor: (id: number) => void;
 };
 
-export const useFloorStore = create<FloorStore>()((set) => ({
+const DEFAULT = {
   id: -1,
   floorNum: -1,
   points: [],
   edges: [],
   rooms: [],
+  interFloorPoints: [],
+  interFloor: [],
   pendingAdd: false,
   junctionAdd: false,
   junctionFrom: "",
@@ -47,24 +56,21 @@ export const useFloorStore = create<FloorStore>()((set) => ({
   deletedPointIds: [],
   deletedEdgeIds: [],
   deletedRoomIds: [],
+  deletedInterFloorIds: [],
+};
+
+export const useFloorStore = create<FloorStore>()((set) => ({
+  ...DEFAULT,
   setEdit: (newValue) =>
     set((state) => ({
       edit: typeof newValue !== "undefined" ? newValue : !state.edit,
     })),
   reset: () =>
     set(() => ({
-      id: -1,
-      floorNum: -1,
-      points: [],
-      edges: [],
-      rooms: [],
-      pendingAdd: false,
-      junctionAdd: false,
-      edit: false,
-      deletedPointIds: [],
-      deletedEdgeIds: [],
-      deletedRoomIds: [],
+      ...DEFAULT,
     })),
+  initInterFloor: (newValue, newOptions) =>
+    set({ interFloor: newValue, interFloorPoints: newOptions }),
   initData: (newValue) =>
     set({
       id: newValue.id,
@@ -216,6 +222,39 @@ export const useFloorStore = create<FloorStore>()((set) => ({
           deleteRooms.length > 0
             ? [...state.deletedRoomIds, ...deleteRooms]
             : state.deletedRoomIds,
+      };
+    }),
+  addInterFloor: (newInterFloor) =>
+    set((state) => {
+      const lastId = state.interFloor.findLast((item) => item.id);
+
+      const newId = lastId !== undefined ? lastId.id + 1 : 1;
+
+      const toAddInterFloor = { ...newInterFloor, id: newId };
+
+      return { interFloor: [...state.interFloor, toAddInterFloor] };
+    }),
+  updateInterFloor: (newInterFloor) =>
+    set((state) => {
+      const updatedInterFloor = state.interFloor.map((item) =>
+        item.id === newInterFloor.id ? newInterFloor : item
+      );
+
+      return { interFloor: [...updatedInterFloor] };
+    }),
+  deleteInterFloor: (id) =>
+    set((state) => {
+      const filtered = state.interFloor.filter((item) => item.id !== id);
+      const deleteInterFloors = state.interFloor
+        .filter((item) => item.id === id)
+        .map((item) => item.id);
+
+      return {
+        interFloor: [...filtered],
+        deletedInterFloorIds:
+          deleteInterFloors.length > 0
+            ? [...state.deletedInterFloorIds, ...deleteInterFloors]
+            : state.deletedInterFloorIds,
       };
     }),
 }));
