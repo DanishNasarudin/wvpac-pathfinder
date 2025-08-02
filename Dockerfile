@@ -13,7 +13,7 @@ ENV NODE_ENV=production
 ARG NEXT_PUBLIC_BASE_URL
 ARG DATABASE_URL
 
-RUN npm run build
+RUN npm run vercel-build
 
 FROM base AS runner
 
