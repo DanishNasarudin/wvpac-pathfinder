@@ -240,7 +240,7 @@ export default function MapRender({
       className="bg-white!"
     >
       <MapClickHandler mapHeight={MAP_HEIGHT} />
-      <MapAnimatedPath points={positions} />
+      <MapAnimatedPath points={positions} speed={0.4} />
       <MapFitBounds positions={positions} padding={100} />
       <SVGOverlay bounds={bounds} interactive className="!z-[2]">
         <svg

@@ -131,3 +131,19 @@
     stroke-dashoffset: -24;
   }
 }
+
+#chevronPattern {
+  transform-origin: 0 0;
+  animation: slidePattern 1.5s linear infinite;
+}
+
+@keyframes slidePattern {
+  to {
+    transform: translate(-20px, 0);
+  }
+}
+
+.chevron-path {
+  stroke: url(#chevronPattern);
+  stroke-width: 4;
+}
