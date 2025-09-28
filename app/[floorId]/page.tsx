@@ -37,15 +37,33 @@ export default async function Page({
         },
       },
     },
+    where: {
+      active: true,
+    },
   });
-  const allRooms = await prisma.room.findMany();
+  const allRooms = await prisma.room.findMany({
+    where: {
+      floor: {
+        active: true,
+      },
+    },
+  });
   const allPoints = await prisma.point.findMany({
     where: {
       type: "point",
+      floor: {
+        active: true,
+      },
     },
   });
-  const allPointsWithJunction = await prisma.point.findMany();
-  const allEdges = await prisma.edge.findMany();
+  const allPointsWithJunction = await prisma.point.findMany({
+    where: {
+      floor: {
+        active: true,
+      },
+    },
+  });
+  const allEdges = await prisma.edge.findMany({});
 
   const { result: floor } = await getFloorById({ id: Number(floorId) || 1 });
 

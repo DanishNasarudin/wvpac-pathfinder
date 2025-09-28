@@ -1,4 +1,4 @@
-import { Point, Room } from "@/prisma/generated/prisma";
+import { Point, Room, RoomGroup } from "@/prisma/generated/prisma";
 import { EdgeWithName, FloorWithPointsEdgesRooms } from "@/services/actions";
 import { create } from "zustand";
 import { handleError } from "./utils";
@@ -9,6 +9,7 @@ type FloorStore = {
   points: Point[];
   edges: EdgeWithName[];
   rooms: Room[];
+  groups: RoomGroup[];
   interFloorPoints: Point[];
   interFloor: EdgeWithName[];
   pendingAdd: boolean;
@@ -18,12 +19,15 @@ type FloorStore = {
   newPoints: Point[];
   newEdges: EdgeWithName[];
   newRooms: Room[];
+  newRoomGroups: RoomGroup[];
   updatedPoints: Point[];
   updatedEdges: EdgeWithName[];
   updatedRooms: Room[];
+  updatedRoomGroups: RoomGroup[];
   deletedPointIds: number[];
   deletedEdgeIds: number[];
   deletedRoomIds: number[];
+  deletedRoomGroupIds: number[];
   deletedInterFloorIds: number[];
   setEdit: (newValue?: boolean) => void;
   reset: () => void;
@@ -40,8 +44,11 @@ type FloorStore = {
   updateEdge: (newEdge: EdgeWithName) => void;
   deleteEdge: (id: number) => void;
   addRoom: (newRoom: Room) => void;
+  addRoomGroup: (newRoom: RoomGroup) => void;
   updateRoom: (newRoom: Room) => void;
+  updateRoomGroup: (newRoom: RoomGroup) => void;
   deleteRoom: (id: number) => void;
+  deleteRoomGroup: (id: number) => void;
   addInterFloor: (newInterFloor: EdgeWithName) => void;
   updateInterFloor: (newInterFloor: EdgeWithName) => void;
   deleteInterFloor: (id: number) => void;
@@ -53,6 +60,7 @@ const DEFAULT = {
   points: [],
   edges: [],
   rooms: [],
+  groups: [],
   interFloorPoints: [],
   interFloor: [],
   pendingAdd: false,
@@ -62,12 +70,15 @@ const DEFAULT = {
   newPoints: [],
   newEdges: [],
   newRooms: [],
+  newRoomGroups: [],
   updatedPoints: [],
   updatedEdges: [],
   updatedRooms: [],
+  updatedRoomGroups: [],
   deletedPointIds: [],
   deletedEdgeIds: [],
   deletedRoomIds: [],
+  deletedRoomGroupIds: [],
   deletedInterFloorIds: [],
 };
 
@@ -307,6 +318,66 @@ export const useFloorStore = create<FloorStore>()((set) => ({
           deleteRooms.length > 0
             ? [...state.deletedRoomIds, ...deleteRooms]
             : state.deletedRoomIds,
+      };
+    }),
+  addRoomGroup: (newRoomGroup) =>
+    set((state) => {
+      const lastId = state.groups.findLast((item) => item.id);
+
+      const newId = lastId !== undefined ? lastId.id + 1 : 1;
+
+      const toAddRoom = { ...newRoomGroup, id: newId };
+
+      return {
+        groups: [...state.groups, toAddRoom],
+        newRoomGroups: [
+          ...state.newRoomGroups,
+          { ...newRoomGroup, id: -newId },
+        ],
+      };
+    }),
+  updateRoomGroup: (newRoomGroup) =>
+    set((state) => {
+      const updatedRoomGroup = state.groups.map((item) =>
+        item.id === newRoomGroup.id ? newRoomGroup : item
+      );
+
+      const isNew = state.newRoomGroups.some(
+        (r) => Math.abs(r.id) === newRoomGroup.id
+      );
+      const newRoomGroups = isNew
+        ? state.newRoomGroups.map((r) =>
+            Math.abs(r.id) === newRoomGroup.id ? newRoomGroup : r
+          )
+        : state.newRoomGroups;
+
+      const updatedRoomGroups = isNew
+        ? state.updatedRoomGroups
+        : state.updatedRoomGroups.some((r) => r.id === newRoomGroup.id)
+        ? state.updatedRoomGroups.map((r) =>
+            r.id === newRoomGroup.id ? newRoomGroup : r
+          )
+        : [...state.updatedRoomGroups, newRoomGroup];
+
+      return {
+        groups: [...updatedRoomGroup],
+        newRoomGroups,
+        updatedRoomGroups,
+      };
+    }),
+  deleteRoomGroup: (id) =>
+    set((state) => {
+      const filtered = state.groups.filter((item) => item.id !== id);
+      const deleteRoomGroups = state.groups
+        .filter((item) => item.id === id)
+        .map((item) => item.id);
+
+      return {
+        groups: [...filtered],
+        deletedRoomGroupIds:
+          deleteRoomGroups.length > 0
+            ? [...state.deletedRoomGroupIds, ...deleteRoomGroups]
+            : state.deletedRoomGroupIds,
       };
     }),
   addInterFloor: (newInterFloor) =>

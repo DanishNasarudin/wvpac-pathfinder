@@ -92,6 +92,7 @@ export async function getFloorById({
     const result = await prisma.floor.findFirst({
       where: {
         id,
+        active: true,
       },
       include: {
         points: {
@@ -100,6 +101,19 @@ export async function getFloorById({
           },
         },
         edges: {
+          where: {
+            floorId: id,
+            from: {
+              floor: {
+                id,
+              },
+            },
+            to: {
+              floor: {
+                id,
+              },
+            },
+          },
           include: {
             from: {
               select: {
@@ -113,7 +127,13 @@ export async function getFloorById({
             },
           },
         },
-        rooms: true,
+        rooms: {
+          where: {
+            floor: {
+              id,
+            },
+          },
+        },
       },
     });
     return { result };
@@ -264,6 +284,18 @@ export async function updateFloor({
 export async function getInterFloorEdges() {
   try {
     const edges = await prisma.edge.findMany({
+      where: {
+        from: {
+          floor: {
+            active: true,
+          },
+        },
+        to: {
+          floor: {
+            active: true,
+          },
+        },
+      },
       include: {
         from: { select: { floorId: true, name: true } },
         to: { select: { floorId: true, name: true } },

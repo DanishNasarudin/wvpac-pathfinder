@@ -240,6 +240,7 @@ export function getRenderPathsForRooms(
     allPoints
   );
   const fullPath = generateFullPath(pointPath);
+  // console.log(fullPath, currentFloorPoints, "CURR");
   return fullPath.filter((pt) =>
     currentFloorPoints.some((fpt) => fpt.id === pt.id)
   );

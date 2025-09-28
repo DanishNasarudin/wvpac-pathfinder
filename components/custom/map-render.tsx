@@ -15,7 +15,13 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import { MapContainer, SVGOverlay, ZoomControl } from "react-leaflet";
+import {
+  ImageOverlay,
+  MapContainer,
+  Pane,
+  SVGOverlay,
+  ZoomControl,
+} from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
 import MapAnimatedPath from "./map-animated-path";
 import MapClickHandler from "./map-click-handler";
@@ -33,10 +39,11 @@ export default function MapRender({
   currentFloorPoints: Point[];
   data: FloorWithPointsEdgesRooms;
 }) {
-  const MAP_HEIGHT = 400;
-  const MAP_WIDTH = 600;
+  const MAP_HEIGHT = 1241;
+  const MAP_WIDTH = 1754;
   const isMobile = useMediaQuery("(max-width: 768px)");
   const [paths, setPaths] = useState<React.ReactNode[]>([]);
+  const [svgShapes, setSvgShapes] = useState<React.ReactNode[]>([]);
   const [isPending, startTransition] = useTransition();
 
   const { fromId, toId } = useUserStore();
@@ -59,6 +66,8 @@ export default function MapRender({
 
     return result;
   }, [fromId, toId, currentFloorPoints, allEdges, allPoints]);
+
+  // console.log(currentFloorPoints, "wow");
 
   const positions: [number, number][] = useMemo(
     () => renderFullPaths.map((p) => [MAP_HEIGHT - p.y, p.x]),
@@ -99,17 +108,32 @@ export default function MapRender({
     [floorObject]
   );
 
-  const totalPath: React.ReactNode[] = useMemo(
-    () => (edit ? [...paths, ...edgePaths, ...pointCircleEdit] : [...paths]),
-    [edit, edgePaths, pointCircleEdit, paths]
+  const vectorOverlayContent = useMemo(
+    () => (edit ? [...edgePaths, ...pointCircleEdit] : null),
+    [edit, edgePaths, pointCircleEdit]
   );
 
-  useEffect(() => {
-    const src = data.src;
-    if (!src) return;
+  const src = data?.src ?? "";
+  const lower = src.toLowerCase();
+  const isSvg = lower.endsWith(".svg") || lower.includes("image/svg+xml");
 
+  useEffect(() => {
+    if (!src || isSvg || (data as any)?.width) return;
+    const img = new Image();
+    img.onload = () => {
+      // set into local component state and replace DEFAULT_* above
+      // e.g., setMapSize({ w: img.naturalWidth, h: img.naturalHeight })
+    };
+    img.src = src;
+  }, [src, isSvg]);
+
+  useEffect(() => {
+    setSvgShapes([]); // reset when src changes
+    if (!src || !isSvg) return;
+
+    const ctl = new AbortController();
     startTransition(() => {
-      fetch(src)
+      fetch(src, { signal: ctl.signal })
         .then((res) => res.text())
         .then((raw) => {
           const doc = new DOMParser().parseFromString(raw, "image/svg+xml");
@@ -125,8 +149,8 @@ export default function MapRender({
               const tag =
                 el.tagName.toLowerCase() as keyof JSX.IntrinsicElements;
               const id = el.getAttribute("id") ?? `${tag}-${i}`;
-
               const dynamicProps: Record<string, any> = {};
+
               Array.from(el.attributes).forEach((attr) => {
                 if (attr.name === "style") {
                   const styleObj: Record<string, string> = {};
@@ -153,7 +177,6 @@ export default function MapRender({
                     const tProps: React.SVGProps<SVGTSpanElement> = {
                       key: idx,
                     };
-
                     Array.from(t.attributes).forEach((attr) => {
                       if (attr.name === "style") {
                         const styleObj: React.CSSProperties = {};
@@ -171,20 +194,18 @@ export default function MapRender({
                         (tProps as any)[attr.name] = attr.value;
                       }
                     });
-
                     return createElement("tspan", tProps, t.textContent);
                   });
                 } else if (textEl.textContent?.includes("\n")) {
                   const x = textEl.getAttribute("x") ?? "0";
                   const lines = textEl.textContent.split(/\r?\n/);
-                  children = lines.map((line, idx) => {
-                    const tProps: React.SVGProps<SVGTSpanElement> = {
-                      key: idx,
-                      x,
-                      dy: idx === 0 ? undefined : "1em",
-                    };
-                    return createElement("tspan", tProps, line);
-                  });
+                  children = lines.map((line, idx) =>
+                    createElement(
+                      "tspan",
+                      { key: idx, x, dy: idx === 0 ? undefined : "1em" },
+                      line
+                    )
+                  );
                 } else {
                   children = textEl.textContent;
                 }
@@ -196,19 +217,9 @@ export default function MapRender({
                   {
                     key: id,
                     ...(dynamicProps as React.SVGProps<SVGElement>),
-                    // onClick: (e: React.MouseEvent<SVGElement>) =>
-                    //   console.log("Clicked:", id),
-                    onMouseEnter: (e: React.MouseEvent<SVGElement>) => {
-                      const fill = dynamicProps.style.fill as
-                        | string
-                        | undefined;
-                      // if (fill && fill !== "none" && tag !== "text")
-                      //   e.currentTarget.style.fill = "orange";
-
-                      // console.log(fill, tag, "C");
-                    },
+                    onMouseEnter: () => {},
                     onMouseLeave: (e: React.MouseEvent<SVGElement>) => {
-                      if (dynamicProps.style.fill)
+                      if (dynamicProps.style?.fill)
                         e.currentTarget.style.fill = dynamicProps.style.fill;
                     },
                   },
@@ -217,10 +228,15 @@ export default function MapRender({
               );
             });
 
-          setPaths(newShapes);
+          setSvgShapes(newShapes);
+        })
+        .catch((e) => {
+          if (e.name !== "AbortError") console.error(e);
         });
     });
-  }, [data.src]);
+
+    return () => ctl.abort();
+  }, [src, isSvg]);
 
   if (isPending) {
     return (
@@ -232,7 +248,7 @@ export default function MapRender({
     <MapContainer
       crs={L.CRS.Simple}
       bounds={bounds}
-      minZoom={isMobile ? -0.2 : 0.4}
+      minZoom={isMobile ? -1.8 : -0.8} //  -0.2 : 0.4
       style={{ height: "60vh", width: "100%", zIndex: 4 }}
       attributionControl={false}
       zoomControl={false}
@@ -240,16 +256,33 @@ export default function MapRender({
       className="bg-white!"
     >
       <MapClickHandler mapHeight={MAP_HEIGHT} />
-      <MapAnimatedPath points={positions} speed={0.4} />
+      <MapAnimatedPath points={positions} speed={0.4} weight={8} />
       <MapFitBounds positions={positions} padding={100} />
-      <SVGOverlay bounds={bounds} interactive className="!z-[2]">
-        <svg
-          viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {totalPath}
-        </svg>
-      </SVGOverlay>
+      <Pane name="bg" style={{ zIndex: 200 }}>
+        {isSvg ? (
+          <SVGOverlay bounds={bounds} interactive={false}>
+            <svg
+              viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              {svgShapes /* parsed SVG elements */}
+            </svg>
+          </SVGOverlay>
+        ) : (
+          // For PNG/JPG/WebP…
+          <ImageOverlay bounds={bounds} url={src} />
+        )}
+      </Pane>
+      <Pane name="vectors" style={{ zIndex: 450 }}>
+        <SVGOverlay bounds={bounds} interactive className="!z-[2]">
+          <svg
+            viewBox={`0 0 ${MAP_WIDTH} ${MAP_HEIGHT}`}
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            {vectorOverlayContent}
+          </svg>
+        </SVGOverlay>
+      </Pane>
       <ZoomControl position="bottomright" />
     </MapContainer>
   );

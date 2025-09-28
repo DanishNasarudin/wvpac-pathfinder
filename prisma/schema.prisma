@@ -12,22 +12,35 @@ datasource db {
 }
 
 model Floor {
-  id   Int    @id @default(autoincrement())
-  name String
-  src  String
+  id     Int     @id @default(autoincrement())
+  name   String
+  src    String
+  active Boolean @default(true)
 
-  rooms  Room[]
-  points Point[]
-  edges  Edge[]
+  rooms      Room[]
+  points     Point[]
+  edges      Edge[]
+  roomGroups RoomGroup[]
 }
 
 model Room {
+  id      Int        @id @default(autoincrement())
+  name    String
+  floorId Int
+  floor   Floor      @relation(fields: [floorId], references: [id], onDelete: Cascade)
+  groupId Int?
+  group   RoomGroup? @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  entryPoints Point[] @relation("RoomEntries")
+}
+
+model RoomGroup {
   id      Int    @id @default(autoincrement())
   name    String
   floorId Int
   floor   Floor  @relation(fields: [floorId], references: [id], onDelete: Cascade)
 
-  entryPoints Point[] @relation("RoomEntries")
+  rooms Room[]
 }
 
 model Point {

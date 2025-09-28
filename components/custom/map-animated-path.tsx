@@ -31,9 +31,9 @@ export default function AnimatedPath({
 
     // prepare your chevron symbol
     const symbol = L.Symbol.arrowHead({
-      pixelSize: 4,
+      pixelSize: weight,
       polygon: false,
-      pathOptions: { stroke: true, weight: 2 },
+      pathOptions: { stroke: true, weight: weight / 2 },
     });
 
     // convert repeat to a number

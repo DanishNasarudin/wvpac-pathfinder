@@ -16,6 +16,7 @@ export default function EditPanel() {
   const points = useFloorStore(useShallow((state) => state.points));
   const edges = useFloorStore(useShallow((state) => state.edges));
   const rooms = useFloorStore(useShallow((state) => state.rooms));
+  const groups = useFloorStore(useShallow((state) => state.groups));
   const interFloor = useFloorStore(useShallow((state) => state.interFloor));
   const interFloorPoints = useFloorStore(
     useShallow((state) => state.interFloorPoints)
@@ -30,6 +31,7 @@ export default function EditPanel() {
     useShallow((state) => state.addInterFloor)
   );
   const addRoom = useFloorStore(useShallow((state) => state.addRoom));
+  const addRoomGroup = useFloorStore(useShallow((state) => state.addRoomGroup));
   const addEdge = useFloorStore(useShallow((state) => state.addEdge));
   const pendingAdd = useFloorStore(useShallow((state) => state.pendingAdd));
   const junctionAdd = useFloorStore(useShallow((state) => state.junctionAdd));
@@ -167,6 +169,7 @@ export default function EditPanel() {
                   name: "enter room name",
                   id: -1,
                   floorId,
+                  groupId: null,
                 })
               }
             >
@@ -174,6 +177,45 @@ export default function EditPanel() {
             </Button>
           </div>
         </TabsContent>
+        {/* <TabsContent value="groups">
+          <ScrollArea className="h-[400px] px-2">
+            <table>
+              <tbody>
+                {groups
+                  .toSorted((a, b) => b.id - a.id)
+                  .filter((point) =>
+                    search
+                      ? point.name.toLowerCase().includes(search.toLowerCase())
+                      : true
+                  )
+                  .map((point) => (
+                    <EditRoomRow key={point.id} data={point} />
+                  ))}
+              </tbody>
+            </table>
+          </ScrollArea>
+          <div className="px-2 grid grid-flow-row gap-1">
+            <Input
+              value={search}
+              placeholder="Search Name"
+              onChange={(e) => setSearch(e.currentTarget.value)}
+            />
+            <Button
+              className="w-full"
+              variant={"outline"}
+              onClick={() =>
+                addRoomGroup({
+                  name: "enter room name",
+                  id: -1,
+                  floorId,
+                  groupId: null,
+                })
+              }
+            >
+              + Add Room
+            </Button>
+          </div>
+        </TabsContent> */}
         <TabsContent value="interfloor">
           <ScrollArea className="h-[400px] px-2">
             <table>
