@@ -15,13 +15,7 @@ import React, {
   useState,
   useTransition,
 } from "react";
-import {
-  ImageOverlay,
-  MapContainer,
-  Pane,
-  SVGOverlay,
-  ZoomControl,
-} from "react-leaflet";
+import { ImageOverlay, MapContainer, Pane, SVGOverlay } from "react-leaflet";
 import { useMediaQuery } from "usehooks-ts";
 import MapAnimatedPath from "./map-animated-path";
 import MapClickHandler from "./map-click-handler";
@@ -284,7 +278,7 @@ export default function MapRender({
           </svg>
         </SVGOverlay>
       </Pane>
-      <ZoomControl position="bottomright" />
+      {/* <ZoomControl position="bottomright" /> */}
     </MapContainer>
   );
 }

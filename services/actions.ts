@@ -320,14 +320,30 @@ export async function getInterFloorEdges() {
 
 export type RoomGroupWithRoom = Prisma.RoomGroupGetPayload<{
   include: {
-    rooms: true;
+    rooms: {
+      include: {
+        floor: {
+          select: {
+            level: true;
+          };
+        };
+      };
+    };
   };
 }>;
 
 export async function getGroupsWithRooms(): Promise<RoomGroupWithRoom[]> {
   const groups = await prisma.roomGroup.findMany({
     include: {
-      rooms: true,
+      rooms: {
+        include: {
+          floor: {
+            select: {
+              level: true,
+            },
+          },
+        },
+      },
     },
   });
 

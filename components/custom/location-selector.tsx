@@ -13,7 +13,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Accordion,
   AccordionContent,
@@ -56,6 +56,13 @@ export default function LocationSelector({
   );
   const [end, setEnd] = useState<string>(() => searchParams.get("end") ?? "");
 
+  const [startFloor, setStartFloor] = useState<string>(
+    () => searchParams.get("startf") ?? ""
+  );
+  const [endFloor, setEndFloor] = useState<string>(
+    () => searchParams.get("endf") ?? ""
+  );
+
   const currentFloorFromPath = useMemo(() => {
     const seg = pathname?.split("/").filter(Boolean)[0];
     const n = Number(seg);
@@ -65,28 +72,40 @@ export default function LocationSelector({
   const [tabValue, setTabValue] = useState<string>(
     `floor-${currentFloorFromPath}`
   );
-  useEffect(() => {
-    setTabValue(`floor-${currentFloorFromPath}`);
-  }, [currentFloorFromPath]);
 
-  const replaceParam = (key: "start" | "end", value: string | null) => {
+  const replaceParams = (
+    updates: Record<string, string | null | undefined>
+  ) => {
+    let path = pathname;
     const params = new URLSearchParams(searchParams);
-    if (value && value.length > 0) params.set(key, value);
-    else params.delete(key);
-
-    const newUrl = createURL(pathname, params);
+    for (const [k, v] of Object.entries(updates)) {
+      if (k === "startf" && v) path = `/${v}`;
+      if (v && v.length > 0) params.set(k, v);
+      else params.delete(k);
+    }
+    const newUrl = createURL(path, params);
     router.replace(newUrl);
   };
 
+  const replaceParam = (key: "start" | "end", value: string | null) =>
+    replaceParams({ [key]: value });
+
   const handleSelectRoom = (roomId: number) => {
     const val = String(roomId);
+    const floorId = groups
+      .flatMap((i) => i.rooms.find((r) => r.id === roomId)?.floor.level)
+      .filter((i) => i);
+    const floorStr = String(floorId[0]);
+
     if (direction === "start") {
       setStart(val);
-      replaceParam("start", val);
+      setStartFloor(floorStr);
+      replaceParams({ start: val, startf: floorStr });
       setFromId(Number(val));
     } else {
       setEnd(val);
-      replaceParam("end", val);
+      setEndFloor(floorStr);
+      replaceParams({ end: val, endf: floorStr });
       setToId(Number(val));
     }
   };
@@ -95,18 +114,25 @@ export default function LocationSelector({
     const params = new URLSearchParams(searchParams);
     const s = params.get("start");
     const e = params.get("end");
-    if (e) params.set("start", e);
-    else params.delete("start");
-    if (s) params.set("end", s);
-    else params.delete("end");
+    const sf = params.get("startf");
+    const ef = params.get("endf");
 
-    const newUrl = createURL(pathname, params);
-    router.replace(newUrl);
+    const updates: Record<string, string | null> = {
+      start: e,
+      end: s,
+      startf: ef,
+      endf: sf,
+    };
+
+    replaceParams(updates);
 
     setStart(e ?? "");
     if (e) setFromId(Number(e));
+    setStartFloor(ef ?? "");
+
     setEnd(s ?? "");
     if (s) setToId(Number(s));
+    setEndFloor(sf ?? "");
   };
 
   const roomNameById = (idStr: string | null): string | undefined => {
@@ -119,11 +145,17 @@ export default function LocationSelector({
     return undefined;
   };
 
-  const pushFloor = (level: number) => {
-    const params = new URLSearchParams(searchParams);
-    const newUrl = createURL(`/${level}`, params);
-    router.push(newUrl);
-  };
+  const pushFloor = useCallback(
+    (level: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (start && startFloor && !params.has("startf"))
+        params.set("startf", startFloor);
+      if (end && endFloor && !params.has("endf")) params.set("endf", endFloor);
+
+      router.push(createURL(`/${level}`, params));
+    },
+    [searchParams, router, endFloor, startFloor, start]
+  );
 
   const handleTabChange = (val: string) => {
     setTabValue(val);
@@ -136,10 +168,16 @@ export default function LocationSelector({
   const startLabel = roomNameById(start) ?? "Your location";
   const endLabel = roomNameById(end) ?? "Destination";
 
+  useEffect(() => {
+    setTabValue(`floor-${currentFloorFromPath}`);
+  }, [currentFloorFromPath]);
+
   // Keep local state in sync when the URL changes (e.g., back/forward)
   useEffect(() => {
     setStart(searchParams.get("start") ?? "");
     setEnd(searchParams.get("end") ?? "");
+    setStartFloor(searchParams.get("startf") ?? "");
+    setEndFloor(searchParams.get("endf") ?? "");
   }, [searchParams]);
 
   // also reflect URL→zustand on initial load / navigation
@@ -166,6 +204,17 @@ export default function LocationSelector({
     }
     setOpenItem(undefined); // no matches
   }, [query, groups]);
+
+  const Pulse = () => (
+    <span className="absolute -top-1 -right-1">
+      <span className="relative flex h-3 w-3">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-75" />
+        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600" />
+      </span>
+    </span>
+  );
+
+  console.log(endFloor, "D");
 
   return (
     <>
@@ -232,15 +281,15 @@ export default function LocationSelector({
             <TabsList className="absolute bottom-0 translate-y-[calc(100%+12px)] left-1/2 -translate-x-1/2 bg-background shadow-md border border-border w-full">
               <TabsTrigger
                 value="floor-1"
-                className="data-[state=active]:bg-green-100"
+                className="relative data-[state=active]:bg-green-100"
               >
-                Floor 1
+                Floor 1{Number(endFloor) === 1 && <Pulse />}
               </TabsTrigger>
               <TabsTrigger
                 value="floor-2"
-                className="data-[state=active]:bg-green-100"
+                className="relative data-[state=active]:bg-green-100"
               >
-                Floor 2
+                Floor 2{Number(endFloor) === 2 && <Pulse />}
               </TabsTrigger>
             </TabsList>
           </Tabs>
@@ -282,13 +331,15 @@ export default function LocationSelector({
               />
             </div>
             <div className="py-4">
-              <Button
-                variant={"outline"}
-                className="rounded-lg"
-                onClick={() => handleSelectRoom(76)}
-              >
-                <NotebookPen /> Registration Counter
-              </Button>
+              <SheetClose asChild>
+                <Button
+                  variant={"outline"}
+                  className="rounded-lg"
+                  onClick={() => handleSelectRoom(76)}
+                >
+                  <NotebookPen /> Registration Counter
+                </Button>
+              </SheetClose>
             </div>
             <Separator />
             <Accordion
