@@ -1,11 +1,17 @@
 import EditButton from "@/components/custom/edit-button";
 import EditPanel from "@/components/custom/edit-panel";
+import LocationSelector from "@/components/custom/location-selector";
 import MapRender from "@/components/custom/map";
 import SvgRegistryInput from "@/components/custom/svg-registry-input";
 import SvgRegistryList from "@/components/custom/svg-registry-list";
 import UserActions from "@/components/custom/user-actions";
 import prisma from "@/lib/prisma";
-import { getFloorByLevel, getInterFloorEdges } from "@/services/actions";
+import { cn } from "@/lib/utils";
+import {
+  getFloorByLevel,
+  getGroupsWithRooms,
+  getInterFloorEdges,
+} from "@/services/actions";
 import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -72,9 +78,23 @@ export default async function Page({
 
   const { result: interFloorEdges } = await getInterFloorEdges();
 
+  const roomGroups = await prisma.roomGroup.findMany();
+  const groups = await getGroupsWithRooms();
+
+  const DEV_MODE = false;
+
   return (
     <div className="flex-1 w-full relative">
-      <div className="h-[60vh] bg-zinc-500 overflow-clip flex justify-center items-center border border-b-1">
+      <LocationSelector
+        className={cn(DEV_MODE ? "hidden" : "")}
+        groups={groups}
+      />
+      <div
+        className={cn(
+          "h-[60vh] bg-zinc-500 overflow-clip flex justify-center items-center border border-b-1",
+          DEV_MODE ? "" : "h-[100vh]"
+        )}
+      >
         {floor ? (
           <MapRender
             allEdges={allEdges}
@@ -86,7 +106,12 @@ export default async function Page({
           <Loader2 className="animate-spin text-white" />
         )}
       </div>
-      <div className="max-w-[400px] w-full mx-auto p-4 space-y-2">
+      <div
+        className={cn(
+          "max-w-[400px] w-full mx-auto p-4 space-y-2",
+          DEV_MODE ? "" : "hidden"
+        )}
+      >
         <Suspense>
           <UserActions
             allPoints={allRooms.map((p) => ({
@@ -104,7 +129,7 @@ export default async function Page({
             {floor && interFloorEdges && (
               <EditButton
                 isProduction={production}
-                data={floor}
+                data={{ ...floor, roomGroups: roomGroups }}
                 interFloorEdges={interFloorEdges}
                 interFloorPoints={allPoints}
               />

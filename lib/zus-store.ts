@@ -100,6 +100,7 @@ export const useFloorStore = create<FloorStore>()((set) => ({
       points: newValue.points,
       edges: newValue.edges,
       rooms: newValue.rooms,
+      groups: newValue.roomGroups,
       floorNum: Number(newValue.name.split(" ")[1]) || -1,
     }),
   triggerAddPoint: () => set(() => ({ pendingAdd: true })),

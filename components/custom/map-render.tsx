@@ -250,7 +250,7 @@ export default function MapRender({
       crs={L.CRS.Simple}
       bounds={bounds}
       minZoom={isMobile ? -1.8 : -0.8} //  -0.2 : 0.4
-      style={{ height: "60vh", width: "100%", zIndex: 4 }}
+      style={{ height: "100vh", width: "100%", zIndex: 4 }}
       attributionControl={false}
       zoomControl={false}
       zoomSnap={isMobile ? 0 : 1}

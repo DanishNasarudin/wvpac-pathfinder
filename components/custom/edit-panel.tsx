@@ -8,6 +8,7 @@ import { ScrollArea } from "../ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import EditEdgeRow from "./edit-edge-row";
 import EditInterRow from "./edit-inter-row";
+import EditRoomGroupRow from "./edit-room-group-row";
 import EditRoomRow from "./edit-room-row";
 import EditRow from "./edit-row";
 
@@ -48,6 +49,7 @@ export default function EditPanel() {
           <TabsTrigger value="points">Points</TabsTrigger>
           <TabsTrigger value="edges">Edges</TabsTrigger>
           <TabsTrigger value="rooms">Rooms</TabsTrigger>
+          <TabsTrigger value="groups">Groups</TabsTrigger>
           <TabsTrigger value="interfloor">InterFloor</TabsTrigger>
         </TabsList>
         <TabsContent value="points" className="flex flex-col gap-2">
@@ -150,7 +152,7 @@ export default function EditPanel() {
                       : true
                   )
                   .map((point) => (
-                    <EditRoomRow key={point.id} data={point} />
+                    <EditRoomRow key={point.id} data={point} options={groups} />
                   ))}
               </tbody>
             </table>
@@ -177,7 +179,7 @@ export default function EditPanel() {
             </Button>
           </div>
         </TabsContent>
-        {/* <TabsContent value="groups">
+        <TabsContent value="groups">
           <ScrollArea className="h-[400px] px-2">
             <table>
               <tbody>
@@ -189,7 +191,7 @@ export default function EditPanel() {
                       : true
                   )
                   .map((point) => (
-                    <EditRoomRow key={point.id} data={point} />
+                    <EditRoomGroupRow key={point.id} data={point} />
                   ))}
               </tbody>
             </table>
@@ -208,14 +210,13 @@ export default function EditPanel() {
                   name: "enter room name",
                   id: -1,
                   floorId,
-                  groupId: null,
                 })
               }
             >
-              + Add Room
+              + Add Group
             </Button>
           </div>
-        </TabsContent> */}
+        </TabsContent>
         <TabsContent value="interfloor">
           <ScrollArea className="h-[400px] px-2">
             <table>

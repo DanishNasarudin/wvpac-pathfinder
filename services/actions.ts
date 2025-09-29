@@ -65,6 +65,7 @@ export type EdgeWithName = Prisma.EdgeGetPayload<{
 export type FloorWithPointsEdgesRooms = Prisma.FloorGetPayload<{
   include: {
     points: true;
+    roomGroups: true;
     edges: {
       include: {
         from: {
@@ -96,6 +97,11 @@ export async function getFloorByLevel({
       },
       include: {
         points: {
+          orderBy: {
+            id: "asc",
+          },
+        },
+        roomGroups: {
           orderBy: {
             id: "asc",
           },
@@ -312,6 +318,22 @@ export async function getInterFloorEdges() {
   }
 }
 
+export type RoomGroupWithRoom = Prisma.RoomGroupGetPayload<{
+  include: {
+    rooms: true;
+  };
+}>;
+
+export async function getGroupsWithRooms(): Promise<RoomGroupWithRoom[]> {
+  const groups = await prisma.roomGroup.findMany({
+    include: {
+      rooms: true,
+    },
+  });
+
+  return groups;
+}
+
 type PointNew = {
   name: string;
   type: string;
@@ -329,8 +351,14 @@ type EdgeUpdate = { id: number } & EdgeNew;
 
 type RoomNew = {
   name: string;
+  groupId: number | null;
 };
 type RoomUpdate = { id: number } & RoomNew;
+
+type RoomGroupNew = {
+  name: string;
+};
+type RoomGroupUpdate = { id: number } & RoomGroupNew;
 
 // 2. Bundle into a single params type:
 interface UpdateFloorParams {
@@ -347,6 +375,10 @@ interface UpdateFloorParams {
   newRooms: RoomNew[];
   updatedRooms: RoomUpdate[];
   deletedRoomIds: number[];
+
+  newRoomGroups: RoomGroupNew[];
+  updatedRoomGroups: RoomGroupUpdate[];
+  deletedRoomGroupIds: number[];
 
   interFloor: Edge[];
   deletedInterFloorIds: number[];
@@ -366,6 +398,9 @@ export async function updateFloorOptimised(params: UpdateFloorParams) {
       newRooms,
       updatedRooms,
       deletedRoomIds,
+      newRoomGroups,
+      updatedRoomGroups,
+      deletedRoomGroupIds,
       interFloor,
       deletedInterFloorIds,
     } = params;
@@ -403,10 +438,22 @@ export async function updateFloorOptimised(params: UpdateFloorParams) {
           create: newRooms,
           update: updatedRooms.map((r) => ({
             where: { id: r.id },
-            data: { name: r.name },
+            data: { name: r.name, groupId: r.groupId },
           })),
           deleteMany: deletedRoomIds.length
             ? { id: { in: deletedRoomIds } }
+            : undefined,
+        },
+        roomGroups: {
+          create: newRoomGroups,
+          update: updatedRoomGroups.map((g) => ({
+            where: { id: g.id },
+            data: {
+              name: g.name,
+            },
+          })),
+          deleteMany: deletedRoomGroupIds.length
+            ? { id: { in: deletedRoomGroupIds } }
             : undefined,
         },
       },
