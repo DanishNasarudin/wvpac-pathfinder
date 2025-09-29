@@ -85,10 +85,12 @@ export default async function Page({
 
   return (
     <div className="flex-1 w-full relative">
-      <LocationSelector
-        className={cn(DEV_MODE ? "hidden" : "")}
-        groups={groups}
-      />
+      <Suspense>
+        <LocationSelector
+          className={cn(DEV_MODE ? "hidden" : "")}
+          groups={groups}
+        />
+      </Suspense>
       <div
         className={cn(
           "h-[60vh] bg-zinc-500 overflow-clip flex justify-center items-center border border-b-1",
