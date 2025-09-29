@@ -385,7 +385,7 @@ export default function LocationSelector({
                           No matches in this group.
                         </div>
                       )}
-                      {g.rooms.length > 6 && (
+                      {visibleRooms.length > 6 && (
                         <Button
                           variant="outline"
                           size="icon-xs"
