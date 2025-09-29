@@ -5,7 +5,7 @@ import SvgRegistryInput from "@/components/custom/svg-registry-input";
 import SvgRegistryList from "@/components/custom/svg-registry-list";
 import UserActions from "@/components/custom/user-actions";
 import prisma from "@/lib/prisma";
-import { getFloorById, getInterFloorEdges } from "@/services/actions";
+import { getFloorByLevel, getInterFloorEdges } from "@/services/actions";
 import { Loader2 } from "lucide-react";
 import { Suspense } from "react";
 
@@ -15,11 +15,12 @@ export async function generateStaticParams() {
   const floors = await prisma.floor.findMany({
     select: {
       id: true,
+      level: true,
     },
   });
 
   return floors.map((item) => ({
-    floorId: String(item.id),
+    floorId: String(item.level),
   }));
 }
 
@@ -65,7 +66,9 @@ export default async function Page({
   });
   const allEdges = await prisma.edge.findMany({});
 
-  const { result: floor } = await getFloorById({ id: Number(floorId) || 1 });
+  const { result: floor } = await getFloorByLevel({
+    level: Number(floorId) || 1,
+  });
 
   const { result: interFloorEdges } = await getInterFloorEdges();
 
@@ -91,7 +94,7 @@ export default async function Page({
               name: p.name,
             }))}
             floors={svgList}
-            floorId={Number(floorId)}
+            floorLevel={Number(floorId)}
           />
         </Suspense>
         {!production && (

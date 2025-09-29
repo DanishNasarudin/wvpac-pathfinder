@@ -64,6 +64,7 @@ export default function MapRender({
       currentFloorPoints
     );
 
+    console.log(currentFloorPoints, "SHOW");
     return result;
   }, [fromId, toId, currentFloorPoints, allEdges, allPoints]);
 

@@ -16,6 +16,7 @@ model Floor {
   name   String
   src    String
   active Boolean @default(true)
+  level  Int     @default(0)
 
   rooms      Room[]
   points     Point[]

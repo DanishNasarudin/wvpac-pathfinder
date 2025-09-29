@@ -23,17 +23,17 @@ type FloorWithPointIds = Prisma.FloorGetPayload<{
 type Props = {
   allPoints: { id: string; name: string }[];
   floors: FloorWithPointIds[];
-  floorId: number;
+  floorLevel: number;
 };
 
-export default function UserActions({ allPoints, floors, floorId }: Props) {
+export default function UserActions({ allPoints, floors, floorLevel }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   const [start, setStart] = useState(() => searchParams.get("start") ?? "");
   const [end, setEnd] = useState(() => searchParams.get("end") ?? "");
-  const [floor, setFloor] = useState(String(floorId) ?? "");
+  const [floor, setFloor] = useState(String(floorLevel) ?? "");
 
   const setSearchParams = new URLSearchParams(searchParams);
   const [_, copy] = useCopyToClipboard();
@@ -52,14 +52,14 @@ export default function UserActions({ allPoints, floors, floorId }: Props) {
       i.rooms.some((p) => p.id === Number(start))
     );
 
-    return startFloor ? startFloor.id : null;
+    return startFloor ? startFloor.level : null;
   }, [start, floors]);
 
   const endFloorNum = useMemo(() => {
     const endFloor = floors.find((i) =>
       i.rooms.some((p) => p.id === Number(end))
     );
-    return endFloor ? endFloor.id : null;
+    return endFloor ? endFloor.level : null;
   }, [end, floors]);
 
   const urlToCopy = useMemo(
@@ -137,7 +137,7 @@ export default function UserActions({ allPoints, floors, floorId }: Props) {
         />
         <DropdownSearch
           id="floor"
-          lists={floors.map((i) => ({ id: String(i.id), name: i.name }))}
+          lists={floors.map((i) => ({ id: String(i.level), name: i.name }))}
           onValueChange={handleChangeValue}
           valueInput={floor || "1"}
           isStart={`${startFloorNum}`}

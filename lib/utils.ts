@@ -200,8 +200,6 @@ export function findShortestPathBetweenRooms(
   const startPoints = getEntryPointsForRoom(startRoomId, points);
   const endPoints = getEntryPointsForRoom(endRoomId, points);
 
-  console.log(bidirEdges, startPoints, endPoints);
-
   let bestPointPath: Point[] | null = null;
   let minDistance = Infinity;
 
@@ -240,7 +238,7 @@ export function getRenderPathsForRooms(
     allPoints
   );
   const fullPath = generateFullPath(pointPath);
-  // console.log(fullPath, currentFloorPoints, "CURR");
+  console.log(allPoints, "CURR");
   return fullPath.filter((pt) =>
     currentFloorPoints.some((fpt) => fpt.id === pt.id)
   );

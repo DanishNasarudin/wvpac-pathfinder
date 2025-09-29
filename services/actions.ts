@@ -83,15 +83,15 @@ export type FloorWithPointsEdgesRooms = Prisma.FloorGetPayload<{
   };
 }>;
 
-export async function getFloorById({
-  id,
+export async function getFloorByLevel({
+  level,
 }: {
-  id: number;
+  level: number;
 }): Promise<{ result?: FloorWithPointsEdgesRooms | null; error?: string }> {
   try {
     const result = await prisma.floor.findFirst({
       where: {
-        id,
+        level,
         active: true,
       },
       include: {
@@ -102,15 +102,14 @@ export async function getFloorById({
         },
         edges: {
           where: {
-            floorId: id,
             from: {
               floor: {
-                id,
+                level,
               },
             },
             to: {
               floor: {
-                id,
+                level,
               },
             },
           },
@@ -130,7 +129,7 @@ export async function getFloorById({
         rooms: {
           where: {
             floor: {
-              id,
+              level,
             },
           },
         },
