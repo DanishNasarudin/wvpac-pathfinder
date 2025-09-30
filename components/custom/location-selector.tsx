@@ -214,8 +214,6 @@ export default function LocationSelector({
     </span>
   );
 
-  console.log(endFloor, "D");
-
   return (
     <>
       <Sheet>
